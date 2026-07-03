@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Глаголы — Verb Trainer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+  }
+
+  header { text-align: center; margin-bottom: 0; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+    letter-spacing: -0.01em;
+  }
+
+  .info-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    color: var(--blue-label);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .info-btn:hover { background: var(--blue-hover); }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 14px;
+    color: var(--blue-label);
+  }
+  .stat-sep { opacity: 0.4; }
+  #timer-display {
+    font-weight: 600;
+    color: var(--blue-dark);
+    font-variant-numeric: tabular-nums;
+  }
+  #timer-display.urgent { color: #c0392b; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--blue-dark); }
+  .modal h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--blue-dark);
+    margin-bottom: 1rem;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 0.5rem;
+  }
+
+  .card {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    border-radius: var(--radius-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    gap: 0;
+    padding: 2rem 1rem 1.25rem;
+  }
+
+  .card-main {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    text-align: center;
+    line-height: 1.2;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+  .card-main.large { font-size: 22px; }
+  .card-main.small {
+    font-size: 15px;
+    font-weight: 500;
+    height: auto;
+    margin-top: 12px;
+  }
+
+  .card-sub {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--blue-label);
+    text-align: center;
+    line-height: 1.4;
+    height: 16px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+
+  .card-main.animating,
+  .card-sub.animating {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .answer-display {
+    min-height: 36px;
+    height: auto;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .answer-display.visible { opacity: 1; }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 680px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    flex: 1;
+    max-width: 220px;
+    border-radius: var(--radius-btn);
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .answer-btn {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .answer-btn:hover { background: var(--blue-light); }
+  .refresh-btn {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+  }
+  .refresh-btn:hover { background: var(--blue-hover); }
+  .action-btn:active { transform: scale(0.97); }
+
+  @media (max-width: 520px) {
+    .cards { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='index.html'">←</button>
+    <h1>English Verb Trainer</h1>
+    <button class="info-btn" onclick="openModal()">i</button>
+  </div>
+  <div class="stats-row">
+    <span class="stat-item" id="timer-display">10:00</span>
+    <span class="stat-sep">·</span>
+    <span class="stat-item">Счёт: <strong id="score-display">0</strong></span>
+  </div>
+</header>
+
+<div class="modal-overlay" id="result-modal">
+  <div class="modal" style="text-align:center;">
+    <div id="result-emoji" style="font-size:40px;margin-bottom:12px;"></div>
+    <h2 id="result-title" style="font-size:18px;margin-bottom:8px;"></h2>
+    <p id="result-score" style="color:#3a7aaa;font-size:14px;margin-bottom:20px;"></p>
+    <button class="action-btn refresh-btn" style="max-width:100%;width:100%;" onclick="restartGame()">Начать заново</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>Ситуации</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 6px;font-size:14px;margin-top:4px;">
+      <div><span style="color:#1a4d70;font-weight:500;">I helped</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">делалось вообще</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I help</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">делается вообще</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I will help</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">будет делаться вообще</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I was helping</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">делалось в тот момент</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I am helping</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">делается в этот момент</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I will be helping</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">будет делаться в тот момент</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I had helped</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">уже было сделано</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I have helped</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">уже есть сделано</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I will have helped</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">уже будет сделано</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I would help</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">делалось бы вообще</span></div>
+      <div><span style="color:#1a4d70;font-weight:500;">I would have helped</span><br><span style="color:#3a7aaa;font-style:italic;font-size:12px;">было бы сделано</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="card-main" id="pronoun">Местоимение</div>
+    <div class="card-sub" id="pronoun-ru">&nbsp;</div>
+  </div>
+  <div class="card">
+    <div class="card-main" id="verb">Глагол</div>
+    <div class="card-sub" id="verb-ru">&nbsp;</div>
+  </div>
+  <div class="card">
+    <div class="card-main small" id="tense">Ситуация</div>
+    <div class="card-sub" id="tense-sub">&nbsp;</div>
+  </div>
+</div>
+
+<div class="answer-display" id="answer-display"></div>
+
+<div class="btn-row">
+  <button class="action-btn answer-btn" onclick="showAnswer()">Правильный ответ</button>
+  <button class="action-btn refresh-btn" id="next-btn" onclick="refresh()">Начать</button>
+</div>
+
+<script>
+const pronouns = [
+  {en:'I',ru:'Я'},{en:'We',ru:'Мы'},{en:'You',ru:'Ты / Вы'},
+  {en:'He',ru:'Он'},{en:'She',ru:'Она'},{en:'It',ru:'Оно'},{en:'They',ru:'Они'}
+];
+const verbs = [
+  {en:'ask',ru:'спрашивать'},{en:'answer',ru:'отвечать'},{en:'look',ru:'смотреть'},
+  {en:'watch',ru:'наблюдать'},{en:'listen',ru:'слушать'},{en:'talk',ru:'говорить'},
+  {en:'walk',ru:'идти'},{en:'open',ru:'открывать'},{en:'close',ru:'закрывать'},
+  {en:'call',ru:'звонить'},{en:'work',ru:'работать'},{en:'study',ru:'учиться'},
+  {en:'learn',ru:'изучать'},{en:'start',ru:'начинать'},{en:'finish',ru:'заканчивать'},
+  {en:'help',ru:'помогать'},{en:'change',ru:'менять'},{en:'like',ru:'нравиться'},
+  {en:'love',ru:'любить'},{en:'hate',ru:'ненавидеть'},{en:'enjoy',ru:'наслаждаться'},
+  {en:'want',ru:'хотеть'},{en:'need',ru:'нуждаться'},{en:'prefer',ru:'предпочитать'},
+  {en:'decide',ru:'решать'},{en:'explain',ru:'объяснять'},{en:'remember',ru:'помнить'},
+  {en:'try',ru:'пробовать'},{en:'move',ru:'двигаться'},{en:'stop',ru:'останавливаться'}
+];
+const situations = [
+  'делалось вообще','делается вообще','будет делаться вообще',
+  'делалось в тот момент','делается в этот момент','будет делаться в тот момент',
+  'уже было сделано','уже есть сделано','уже будет сделано',
+  'делалось бы вообще','было бы сделано'
+];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+let current = { pronoun: null, verb: null, sit: null };
+let score = 0;
+let timerInterval = null;
+let secondsLeft = 600;
+let timerStarted = false;
+
+function startTimer() {
+  if (timerStarted) return;
+  timerStarted = true;
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const el = document.getElementById('timer-display');
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (secondsLeft <= 60) el.classList.add('urgent');
+    if (secondsLeft <= 0) { clearInterval(timerInterval); showResult(); }
+  }, 1000);
+}
+
+function showResult() {
+  document.getElementById('result-score').textContent = `Счёт: ${score} из 150`;
+  if (score >= 150) {
+    document.getElementById('result-emoji').textContent = '🏆';
+    document.getElementById('result-title').textContent = 'Поздравляем, ты достиг автоматизма!';
+  } else {
+    document.getElementById('result-emoji').textContent = '💪';
+    document.getElementById('result-title').textContent = 'Ты хорошо поработал, давай еще!';
+  }
+  document.getElementById('result-modal').classList.add('open');
+}
+
+function restartGame() {
+  document.getElementById('result-modal').classList.remove('open');
+  score = 0; secondsLeft = 600; timerStarted = false;
+  current = { pronoun: null, verb: null, sit: null };
+  document.getElementById('score-display').textContent = '0';
+  document.getElementById('timer-display').textContent = '10:00';
+  document.getElementById('timer-display').classList.remove('urgent');
+  document.getElementById('next-btn').textContent = 'Начать';
+  const ans = document.getElementById('answer-display');
+  ans.classList.remove('visible'); ans.textContent = '';
+  animateCard('pronoun','Местоимение'); animateCard('pronoun-ru','\u00a0');
+  animateCard('verb','Глагол'); animateCard('verb-ru','\u00a0');
+  animateCard('tense','Ситуация');
+}
+
+function conjugate(pronoun, verb, sit) {
+  const p = pronoun.en; const v = verb.en;
+  const he = ['He','She','It'].includes(p);
+  function addS(v) {
+    if (/[sxo]$/.test(v)||/sh$/.test(v)||/ch$/.test(v)) return v+'es';
+    if (/[^aeiou]y$/.test(v)) return v.slice(0,-1)+'ies';
+    return v+'s';
+  }
+  function addED(v) {
+    if (/e$/.test(v)) return v+'d';
+    if (/[^aeiou]y$/.test(v)) return v.slice(0,-1)+'ied';
+    return v+'ed';
+  }
+  function addING(v) {
+    if (/[^e]e$/.test(v)) return v.slice(0,-1)+'ing';
+    return v+'ing';
+  }
+  const be = p==='I'?'am':he?'is':'are';
+  const was = (p==='I'||he)?'was':'were';
+  const have = he?'has':'have';
+  switch(sit) {
+    case 'делалось вообще':             return `${p} ${addED(v)}`;
+    case 'делается вообще':             return `${p} ${he?addS(v):v}`;
+    case 'будет делаться вообще':       return `${p} will ${v}`;
+    case 'делалось в тот момент':       return `${p} ${was} ${addING(v)}`;
+    case 'делается в этот момент':      return `${p} ${be} ${addING(v)}`;
+    case 'будет делаться в тот момент': return `${p} will be ${addING(v)}`;
+    case 'уже было сделано':            return `${p} had ${addED(v)}`;
+    case 'уже есть сделано':            return `${p} ${have} ${addED(v)}`;
+    case 'уже будет сделано':           return `${p} will have ${addED(v)}`;
+    case 'делалось бы вообще':          return `${p} would ${v}`;
+    case 'было бы сделано':             return `${p} would have ${addED(v)}`;
+    default: return '';
+  }
+}
+
+function showAnswer() {
+  if (!current.pronoun) return;
+  const el = document.getElementById('answer-display');
+  el.textContent = conjugate(current.pronoun, current.verb, current.sit);
+  el.classList.add('visible');
+}
+
+function animateCard(id, val, large) {
+  const el = document.getElementById(id);
+  el.classList.add('animating');
+  setTimeout(() => {
+    el.textContent = val;
+    if (large) el.classList.add('large');
+    el.classList.remove('animating');
+  }, 130);
+}
+
+function refresh() {
+  if (current.pronoun) {
+    score++;
+    document.getElementById('score-display').textContent = score;
+  }
+  startTimer();
+  current.pronoun = pick(pronouns);
+  current.verb = pick(verbs);
+  current.sit = pick(situations);
+  document.getElementById('next-btn').textContent = 'Следующее';
+  const ans = document.getElementById('answer-display');
+  ans.classList.remove('visible'); ans.textContent = '';
+  animateCard('pronoun', current.pronoun.en, true);
+  animateCard('pronoun-ru', current.pronoun.ru);
+  setTimeout(() => { animateCard('verb', current.verb.en, true); animateCard('verb-ru', current.verb.ru); }, 60);
+  setTimeout(() => { animateCard('tense', current.sit); }, 120);
+}
+
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target===document.getElementById('modal')) closeModal(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Фразы — Verb Trainer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+    gap: 1.5rem;
+  }
+
+  header { text-align: center; margin-bottom: 0; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+    letter-spacing: -0.01em;
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 14px;
+    color: var(--blue-label);
+  }
+  .stat-sep { opacity: 0.4; }
+  #timer-display {
+    font-weight: 600;
+    color: var(--blue-dark);
+    font-variant-numeric: tabular-nums;
+  }
+  #timer-display.urgent { color: #c0392b; }
+
+  .phrase-container {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .phrase-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--blue-label);
+  }
+
+  .phrase-ru {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    line-height: 1.4;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+
+  .phrase-ru.animating {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .phrase-container.hidden .phrase-label,
+  .phrase-container.hidden .phrase-ru {
+    opacity: 0;
+  }
+
+  .answer-display {
+    height: 30px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 480px;
+  }
+  .answer-display.visible { opacity: 1; }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 480px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    flex: 1;
+    max-width: 220px;
+    border-radius: var(--radius-btn);
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .answer-btn {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .answer-btn:hover { background: var(--blue-light); }
+  .refresh-btn {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+  }
+  .refresh-btn:hover { background: var(--blue-hover); }
+  .action-btn:active { transform: scale(0.97); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    position: relative;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='index.html'">←</button>
+    <h1>English Verb Trainer</h1>
+  </div>
+  <div class="stats-row">
+    <span id="timer-display">10:00</span>
+    <span class="stat-sep">·</span>
+    <span>Счёт: <strong id="score-display">0</strong></span>
+  </div>
+</header>
+
+<div class="modal-overlay" id="result-modal">
+  <div class="modal">
+    <div id="result-emoji" style="font-size:40px;margin-bottom:12px;"></div>
+    <h2 id="result-title" style="font-size:18px;margin-bottom:8px;color:#1a4d70;"></h2>
+    <p id="result-score" style="color:#3a7aaa;font-size:14px;margin-bottom:20px;"></p>
+    <button class="action-btn refresh-btn" style="max-width:100%;width:100%;" onclick="restartGame()">Начать заново</button>
+  </div>
+</div>
+
+<div class="phrase-container hidden" id="phrase-container">
+  <div class="phrase-label" id="phrase-label">Как сказать:</div>
+  <div class="phrase-ru" id="phrase-ru">&nbsp;</div>
+</div>
+
+<div class="answer-display" id="answer-display"></div>
+
+<div class="btn-row">
+  <button class="action-btn answer-btn" onclick="showAnswer()">Правильный ответ</button>
+  <button class="action-btn refresh-btn" id="next-btn" onclick="refresh()">Начать</button>
+</div>
+
+<script>
+const phrases = [
+  {
+    "verb": "ask",
+    "sit": "делалось вообще",
+    "ru": "Я спросил друга о работе.",
+    "en": "I asked my friend about work yesterday."
+  },
+  {
+    "verb": "ask",
+    "sit": "делается вообще",
+    "ru": "Я часто спрашиваю друзей о новостях.",
+    "en": "I often ask my friends about the news."
+  },
+  {
+    "verb": "ask",
+    "sit": "будет делаться вообще",
+    "ru": "Я спрошу учителя об этом завтра.",
+    "en": "I will ask the teacher about this tomorrow."
+  },
+  {
+    "verb": "ask",
+    "sit": "делалось в тот момент",
+    "ru": "Я спрашивал дорогу, когда начался дождь.",
+    "en": "I was asking for directions when it started to rain."
+  },
+  {
+    "verb": "ask",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас спрашиваю друга про фильм.",
+    "en": "I am asking my friend about the movie right now."
+  },
+  {
+    "verb": "ask",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду спрашивать врача о результатах.",
+    "en": "Tomorrow at this time I will be asking the doctor about the results."
+  },
+  {
+    "verb": "ask",
+    "sit": "уже было сделано",
+    "ru": "Я уже спросил учителя, когда прозвенел звонок.",
+    "en": "I had already asked the teacher when the bell rang."
+  },
+  {
+    "verb": "ask",
+    "sit": "уже есть сделано",
+    "ru": "Я уже спросил маму об этом.",
+    "en": "I have already asked my mom about this."
+  },
+  {
+    "verb": "ask",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже спрошу всех друзей о планах.",
+    "en": "By the evening I will have already asked all my friends about their plans."
+  },
+  {
+    "verb": "answer",
+    "sit": "делалось вообще",
+    "ru": "Я ответил на письмо вчера.",
+    "en": "I answered the letter yesterday."
+  },
+  {
+    "verb": "answer",
+    "sit": "делается вообще",
+    "ru": "Я всегда отвечаю на звонки быстро.",
+    "en": "I always answer calls quickly."
+  },
+  {
+    "verb": "answer",
+    "sit": "будет делаться вообще",
+    "ru": "Я отвечу на сообщение завтра.",
+    "en": "I will answer the message tomorrow."
+  },
+  {
+    "verb": "answer",
+    "sit": "делалось в тот момент",
+    "ru": "Я отвечал на вопросы, когда погас свет.",
+    "en": "I was answering questions when the lights went out."
+  },
+  {
+    "verb": "answer",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас отвечаю на письма.",
+    "en": "I am answering emails right now."
+  },
+  {
+    "verb": "answer",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду отвечать на звонки клиентов.",
+    "en": "Tomorrow at this time I will be answering clients' calls."
+  },
+  {
+    "verb": "answer",
+    "sit": "уже было сделано",
+    "ru": "Я уже ответил на вопрос, когда пришли друзья.",
+    "en": "I had already answered the question when my friends arrived."
+  },
+  {
+    "verb": "answer",
+    "sit": "уже есть сделано",
+    "ru": "Я уже ответил на это письмо.",
+    "en": "I have already answered this letter."
+  },
+  {
+    "verb": "answer",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже отвечу на все сообщения.",
+    "en": "By the evening I will have already answered all the messages."
+  },
+  {
+    "verb": "look",
+    "sit": "делалось вообще",
+    "ru": "Я посмотрел на старые фото вчера.",
+    "en": "I looked at old photos yesterday."
+  },
+  {
+    "verb": "look",
+    "sit": "делается вообще",
+    "ru": "Я часто смотрю в окно на работе.",
+    "en": "I often look out the window at work."
+  },
+  {
+    "verb": "look",
+    "sit": "будет делаться вообще",
+    "ru": "Я посмотрю расписание завтра.",
+    "en": "I will look at the schedule tomorrow."
+  },
+  {
+    "verb": "look",
+    "sit": "делалось в тот момент",
+    "ru": "Я смотрел на небо, когда начался дождь.",
+    "en": "I was looking at the sky when it started to rain."
+  },
+  {
+    "verb": "look",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас смотрю на карту.",
+    "en": "I am looking at the map right now."
+  },
+  {
+    "verb": "look",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду смотреть на новый дом.",
+    "en": "Tomorrow at this time I will be looking at the new house."
+  },
+  {
+    "verb": "look",
+    "sit": "уже было сделано",
+    "ru": "Я уже посмотрел на фото, когда пришли друзья.",
+    "en": "I had already looked at the photos when my friends arrived."
+  },
+  {
+    "verb": "look",
+    "sit": "уже есть сделано",
+    "ru": "Я уже посмотрел это место.",
+    "en": "I have already looked at this place."
+  },
+  {
+    "verb": "look",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже посмотрю все квартиры.",
+    "en": "By the evening I will have already looked at all the apartments."
+  },
+  {
+    "verb": "watch",
+    "sit": "делалось вообще",
+    "ru": "Я посмотрел фильм вчера.",
+    "en": "I watched a movie yesterday."
+  },
+  {
+    "verb": "watch",
+    "sit": "делается вообще",
+    "ru": "Я смотрю телевизор каждый вечер.",
+    "en": "I watch TV every evening."
+  },
+  {
+    "verb": "watch",
+    "sit": "будет делаться вообще",
+    "ru": "Я посмотрю новый сериал завтра.",
+    "en": "I will watch the new series tomorrow."
+  },
+  {
+    "verb": "watch",
+    "sit": "делалось в тот момент",
+    "ru": "Я смотрел телевизор, когда зазвонил телефон.",
+    "en": "I was watching TV when the phone rang."
+  },
+  {
+    "verb": "watch",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас смотрю фильм.",
+    "en": "I am watching a movie right now."
+  },
+  {
+    "verb": "watch",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду смотреть матч.",
+    "en": "Tomorrow at this time I will be watching the match."
+  },
+  {
+    "verb": "watch",
+    "sit": "уже было сделано",
+    "ru": "Я уже посмотрел фильм, когда пришли друзья.",
+    "en": "I had already watched the movie when my friends arrived."
+  },
+  {
+    "verb": "watch",
+    "sit": "уже есть сделано",
+    "ru": "Я уже посмотрел этот сериал.",
+    "en": "I have already watched this series."
+  },
+  {
+    "verb": "watch",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже посмотрю все серии.",
+    "en": "By the evening I will have already watched all the episodes."
+  },
+  {
+    "verb": "listen",
+    "sit": "делалось вообще",
+    "ru": "Я слушал музыку вчера вечером.",
+    "en": "I listened to music yesterday evening."
+  },
+  {
+    "verb": "listen",
+    "sit": "делается вообще",
+    "ru": "Я слушаю музыку каждый день.",
+    "en": "I listen to music every day."
+  },
+  {
+    "verb": "listen",
+    "sit": "будет делаться вообще",
+    "ru": "Я послушаю этот альбом завтра.",
+    "en": "I will listen to this album tomorrow."
+  },
+  {
+    "verb": "listen",
+    "sit": "делалось в тот момент",
+    "ru": "Я слушал радио, когда зазвонил телефон.",
+    "en": "I was listening to the radio when the phone rang."
+  },
+  {
+    "verb": "listen",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас слушаю подкаст.",
+    "en": "I am listening to a podcast right now."
+  },
+  {
+    "verb": "listen",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду слушать лекцию.",
+    "en": "Tomorrow at this time I will be listening to the lecture."
+  },
+  {
+    "verb": "listen",
+    "sit": "уже было сделано",
+    "ru": "Я уже послушал новость, когда пришли друзья.",
+    "en": "I had already listened to the news when my friends arrived."
+  },
+  {
+    "verb": "listen",
+    "sit": "уже есть сделано",
+    "ru": "Я уже послушал эту песню сто раз.",
+    "en": "I have already listened to this song a hundred times."
+  },
+  {
+    "verb": "listen",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже прослушаю весь альбом.",
+    "en": "By the evening I will have already listened to the whole album."
+  },
+  {
+    "verb": "talk",
+    "sit": "делалось вообще",
+    "ru": "Я поговорил с другом вчера.",
+    "en": "I talked to my friend yesterday."
+  },
+  {
+    "verb": "talk",
+    "sit": "делается вообще",
+    "ru": "Я часто разговариваю с друзьями по телефону.",
+    "en": "I often talk to my friends on the phone."
+  },
+  {
+    "verb": "talk",
+    "sit": "будет делаться вообще",
+    "ru": "Я поговорю с учителем завтра.",
+    "en": "I will talk to the teacher tomorrow."
+  },
+  {
+    "verb": "talk",
+    "sit": "делалось в тот момент",
+    "ru": "Я разговаривал с другом, когда в дверь постучали.",
+    "en": "I was talking to my friend when someone knocked on the door."
+  },
+  {
+    "verb": "talk",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас разговариваю с мамой.",
+    "en": "I am talking to my mom right now."
+  },
+  {
+    "verb": "talk",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду разговаривать с клиентом.",
+    "en": "Tomorrow at this time I will be talking to a client."
+  },
+  {
+    "verb": "talk",
+    "sit": "уже было сделано",
+    "ru": "Я уже поговорил с другом, когда пришли гости.",
+    "en": "I had already talked to my friend when the guests arrived."
+  },
+  {
+    "verb": "talk",
+    "sit": "уже есть сделано",
+    "ru": "Я уже поговорил с учителем об этом.",
+    "en": "I have already talked to the teacher about this."
+  },
+  {
+    "verb": "talk",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже поговорю со всеми друзьями.",
+    "en": "By the evening I will have already talked to all my friends."
+  },
+  {
+    "verb": "walk",
+    "sit": "делалось вообще",
+    "ru": "Я гулял с собакой вчера.",
+    "en": "I walked the dog yesterday."
+  },
+  {
+    "verb": "walk",
+    "sit": "делается вообще",
+    "ru": "Я хожу пешком на работу каждый день.",
+    "en": "I walk to work every day."
+  },
+  {
+    "verb": "walk",
+    "sit": "будет делаться вообще",
+    "ru": "Я пройдусь по парку завтра.",
+    "en": "I will walk in the park tomorrow."
+  },
+  {
+    "verb": "walk",
+    "sit": "делалось в тот момент",
+    "ru": "Я гулял с собакой, когда начался дождь.",
+    "en": "I was walking the dog when it started to rain."
+  },
+  {
+    "verb": "walk",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас гуляю в парке.",
+    "en": "I am walking in the park right now."
+  },
+  {
+    "verb": "walk",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду гулять с собакой.",
+    "en": "Tomorrow at this time I will be walking the dog."
+  },
+  {
+    "verb": "walk",
+    "sit": "уже было сделано",
+    "ru": "Я уже погулял с собакой, когда пришли друзья.",
+    "en": "I had already walked the dog when my friends arrived."
+  },
+  {
+    "verb": "walk",
+    "sit": "уже есть сделано",
+    "ru": "Я уже погулял сегодня утром.",
+    "en": "I have already walked this morning."
+  },
+  {
+    "verb": "walk",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже погуляю с собакой.",
+    "en": "By the evening I will have already walked the dog."
+  },
+  {
+    "verb": "open",
+    "sit": "делалось вообще",
+    "ru": "Я открыл дверь вчера.",
+    "en": "I opened the door yesterday."
+  },
+  {
+    "verb": "open",
+    "sit": "делается вообще",
+    "ru": "Я открываю магазин каждое утро.",
+    "en": "I open the shop every morning."
+  },
+  {
+    "verb": "open",
+    "sit": "будет делаться вообще",
+    "ru": "Я открою окно завтра.",
+    "en": "I will open the window tomorrow."
+  },
+  {
+    "verb": "open",
+    "sit": "делалось в тот момент",
+    "ru": "Я открывал дверь, когда зазвонил телефон.",
+    "en": "I was opening the door when the phone rang."
+  },
+  {
+    "verb": "open",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас открываю посылку.",
+    "en": "I am opening a package right now."
+  },
+  {
+    "verb": "open",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду открывать магазин.",
+    "en": "Tomorrow at this time I will be opening the shop."
+  },
+  {
+    "verb": "open",
+    "sit": "уже было сделано",
+    "ru": "Я уже открыл дверь, когда пришли гости.",
+    "en": "I had already opened the door when the guests arrived."
+  },
+  {
+    "verb": "open",
+    "sit": "уже есть сделано",
+    "ru": "Я уже открыл письмо.",
+    "en": "I have already opened the letter."
+  },
+  {
+    "verb": "open",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже открою все коробки.",
+    "en": "By the evening I will have already opened all the boxes."
+  },
+  {
+    "verb": "close",
+    "sit": "делалось вообще",
+    "ru": "Я закрыл дверь вчера.",
+    "en": "I closed the door yesterday."
+  },
+  {
+    "verb": "close",
+    "sit": "делается вообще",
+    "ru": "Я закрываю магазин каждый вечер.",
+    "en": "I close the shop every evening."
+  },
+  {
+    "verb": "close",
+    "sit": "будет делаться вообще",
+    "ru": "Я закрою окно завтра.",
+    "en": "I will close the window tomorrow."
+  },
+  {
+    "verb": "close",
+    "sit": "делалось в тот момент",
+    "ru": "Я закрывал дверь, когда зазвонил телефон.",
+    "en": "I was closing the door when the phone rang."
+  },
+  {
+    "verb": "close",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас закрываю ноутбук.",
+    "en": "I am closing my laptop right now."
+  },
+  {
+    "verb": "close",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду закрывать магазин.",
+    "en": "Tomorrow at this time I will be closing the shop."
+  },
+  {
+    "verb": "close",
+    "sit": "уже было сделано",
+    "ru": "Я уже закрыл дверь, когда пришли гости.",
+    "en": "I had already closed the door when the guests arrived."
+  },
+  {
+    "verb": "close",
+    "sit": "уже есть сделано",
+    "ru": "Я уже закрыл все окна.",
+    "en": "I have already closed all the windows."
+  },
+  {
+    "verb": "close",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже закрою магазин.",
+    "en": "By the evening I will have already closed the shop."
+  },
+  {
+    "verb": "call",
+    "sit": "делалось вообще",
+    "ru": "Я позвонил другу вчера.",
+    "en": "I called my friend yesterday."
+  },
+  {
+    "verb": "call",
+    "sit": "делается вообще",
+    "ru": "Я звоню маме каждый день.",
+    "en": "I call my mom every day."
+  },
+  {
+    "verb": "call",
+    "sit": "будет делаться вообще",
+    "ru": "Я позвоню врачу завтра.",
+    "en": "I will call the doctor tomorrow."
+  },
+  {
+    "verb": "call",
+    "sit": "делалось в тот момент",
+    "ru": "Я звонил другу, когда погас свет.",
+    "en": "I was calling my friend when the lights went out."
+  },
+  {
+    "verb": "call",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас звоню в такси.",
+    "en": "I am calling a taxi right now."
+  },
+  {
+    "verb": "call",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду звонить клиентам.",
+    "en": "Tomorrow at this time I will be calling clients."
+  },
+  {
+    "verb": "call",
+    "sit": "уже было сделано",
+    "ru": "Я уже позвонил другу, когда пришли гости.",
+    "en": "I had already called my friend when the guests arrived."
+  },
+  {
+    "verb": "call",
+    "sit": "уже есть сделано",
+    "ru": "Я уже позвонил врачу.",
+    "en": "I have already called the doctor."
+  },
+  {
+    "verb": "call",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже позвоню всем клиентам.",
+    "en": "By the evening I will have already called all the clients."
+  },
+  {
+    "verb": "work",
+    "sit": "делалось вообще",
+    "ru": "Я работал допоздна вчера.",
+    "en": "I worked late yesterday."
+  },
+  {
+    "verb": "work",
+    "sit": "делается вообще",
+    "ru": "Я работаю в офисе каждый день.",
+    "en": "I work in the office every day."
+  },
+  {
+    "verb": "work",
+    "sit": "будет делаться вообще",
+    "ru": "Я поработаю над проектом завтра.",
+    "en": "I will work on the project tomorrow."
+  },
+  {
+    "verb": "work",
+    "sit": "делалось в тот момент",
+    "ru": "Я работал, когда зазвонил телефон.",
+    "en": "I was working when the phone rang."
+  },
+  {
+    "verb": "work",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас работаю над отчётом.",
+    "en": "I am working on a report right now."
+  },
+  {
+    "verb": "work",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду работать над проектом.",
+    "en": "Tomorrow at this time I will be working on the project."
+  },
+  {
+    "verb": "work",
+    "sit": "уже было сделано",
+    "ru": "Я уже поработал два часа, когда пришли коллеги.",
+    "en": "I had already worked for two hours when my colleagues arrived."
+  },
+  {
+    "verb": "work",
+    "sit": "уже есть сделано",
+    "ru": "Я уже поработал над этим проектом сегодня.",
+    "en": "I have already worked on this project today."
+  },
+  {
+    "verb": "work",
+    "sit": "уже будет сделано",
+    "ru": "К пятнице я уже поработаю над проектом целую неделю.",
+    "en": "By Friday I will have already worked on the project for a whole week."
+  },
+  {
+    "verb": "study",
+    "sit": "делалось вообще",
+    "ru": "Я изучал английский вчера.",
+    "en": "I studied English yesterday."
+  },
+  {
+    "verb": "study",
+    "sit": "делается вообще",
+    "ru": "Я изучаю английский каждый день.",
+    "en": "I study English every day."
+  },
+  {
+    "verb": "study",
+    "sit": "будет делаться вообще",
+    "ru": "Я изучу новую тему завтра.",
+    "en": "I will study a new topic tomorrow."
+  },
+  {
+    "verb": "study",
+    "sit": "делалось в тот момент",
+    "ru": "Я изучал английский, когда зазвонил телефон.",
+    "en": "I was studying English when the phone rang."
+  },
+  {
+    "verb": "study",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас изучаю новую тему.",
+    "en": "I am studying a new topic right now."
+  },
+  {
+    "verb": "study",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду изучать грамматику.",
+    "en": "Tomorrow at this time I will be studying grammar."
+  },
+  {
+    "verb": "study",
+    "sit": "уже было сделано",
+    "ru": "Я уже изучил эту тему, когда начался экзамен.",
+    "en": "I had already studied this topic when the exam started."
+  },
+  {
+    "verb": "study",
+    "sit": "уже есть сделано",
+    "ru": "Я уже изучил три урока.",
+    "en": "I have already studied three lessons."
+  },
+  {
+    "verb": "study",
+    "sit": "уже будет сделано",
+    "ru": "К экзамену я уже изучу весь материал.",
+    "en": "By the exam I will have already studied all the material."
+  },
+  {
+    "verb": "learn",
+    "sit": "делалось вообще",
+    "ru": "Я выучил новые слова вчера.",
+    "en": "I learned new words yesterday."
+  },
+  {
+    "verb": "learn",
+    "sit": "делается вообще",
+    "ru": "Я учу английский каждый день.",
+    "en": "I learn English every day."
+  },
+  {
+    "verb": "learn",
+    "sit": "будет делаться вообще",
+    "ru": "Я выучу этот урок завтра.",
+    "en": "I will learn this lesson tomorrow."
+  },
+  {
+    "verb": "learn",
+    "sit": "делалось в тот момент",
+    "ru": "Я учил слова, когда зазвонил телефон.",
+    "en": "I was learning words when the phone rang."
+  },
+  {
+    "verb": "learn",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас учу новые слова.",
+    "en": "I am learning new words right now."
+  },
+  {
+    "verb": "learn",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду учить грамматику.",
+    "en": "Tomorrow at this time I will be learning grammar."
+  },
+  {
+    "verb": "learn",
+    "sit": "уже было сделано",
+    "ru": "Я уже выучил слова, когда начался урок.",
+    "en": "I had already learned the words when the lesson started."
+  },
+  {
+    "verb": "learn",
+    "sit": "уже есть сделано",
+    "ru": "Я уже выучил сто новых слов.",
+    "en": "I have already learned a hundred new words."
+  },
+  {
+    "verb": "learn",
+    "sit": "уже будет сделано",
+    "ru": "К экзамену я уже выучу все правила.",
+    "en": "By the exam I will have already learned all the rules."
+  },
+  {
+    "verb": "start",
+    "sit": "делалось вообще",
+    "ru": "Я начал работу вчера.",
+    "en": "I started work yesterday."
+  },
+  {
+    "verb": "start",
+    "sit": "делается вообще",
+    "ru": "Я начинаю работу в девять утра.",
+    "en": "I start work at nine in the morning."
+  },
+  {
+    "verb": "start",
+    "sit": "будет делаться вообще",
+    "ru": "Я начну проект завтра.",
+    "en": "I will start the project tomorrow."
+  },
+  {
+    "verb": "start",
+    "sit": "делалось в тот момент",
+    "ru": "Я начинал ужин, когда зазвонил телефон.",
+    "en": "I was starting dinner when the phone rang."
+  },
+  {
+    "verb": "start",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас начинаю новый проект.",
+    "en": "I am starting a new project right now."
+  },
+  {
+    "verb": "start",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду начинать презентацию.",
+    "en": "Tomorrow at this time I will be starting the presentation."
+  },
+  {
+    "verb": "start",
+    "sit": "уже было сделано",
+    "ru": "Я уже начал работу, когда пришли коллеги.",
+    "en": "I had already started work when my colleagues arrived."
+  },
+  {
+    "verb": "start",
+    "sit": "уже есть сделано",
+    "ru": "Я уже начал этот проект.",
+    "en": "I have already started this project."
+  },
+  {
+    "verb": "start",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже начну новый проект.",
+    "en": "By the evening I will have already started a new project."
+  },
+  {
+    "verb": "finish",
+    "sit": "делалось вообще",
+    "ru": "Я закончил работу вчера.",
+    "en": "I finished work yesterday."
+  },
+  {
+    "verb": "finish",
+    "sit": "делается вообще",
+    "ru": "Я заканчиваю работу в шесть вечера.",
+    "en": "I finish work at six in the evening."
+  },
+  {
+    "verb": "finish",
+    "sit": "будет делаться вообще",
+    "ru": "Я закончу проект завтра.",
+    "en": "I will finish the project tomorrow."
+  },
+  {
+    "verb": "finish",
+    "sit": "делалось в тот момент",
+    "ru": "Я заканчивал ужин, когда зазвонил телефон.",
+    "en": "I was finishing dinner when the phone rang."
+  },
+  {
+    "verb": "finish",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас заканчиваю отчёт.",
+    "en": "I am finishing the report right now."
+  },
+  {
+    "verb": "finish",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду заканчивать проект.",
+    "en": "Tomorrow at this time I will be finishing the project."
+  },
+  {
+    "verb": "finish",
+    "sit": "уже было сделано",
+    "ru": "Я уже закончил работу, когда пришли гости.",
+    "en": "I had already finished work when the guests arrived."
+  },
+  {
+    "verb": "finish",
+    "sit": "уже есть сделано",
+    "ru": "Я уже закончил домашнее задание.",
+    "en": "I have already finished my homework."
+  },
+  {
+    "verb": "finish",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже закончу проект.",
+    "en": "By the evening I will have already finished the project."
+  },
+  {
+    "verb": "help",
+    "sit": "делалось вообще",
+    "ru": "Я помог другу вчера.",
+    "en": "I helped my friend yesterday."
+  },
+  {
+    "verb": "help",
+    "sit": "делается вообще",
+    "ru": "Я помогаю маме по дому каждый день.",
+    "en": "I help my mom around the house every day."
+  },
+  {
+    "verb": "help",
+    "sit": "будет делаться вообще",
+    "ru": "Я помогу тебе завтра.",
+    "en": "I will help you tomorrow."
+  },
+  {
+    "verb": "help",
+    "sit": "делалось в тот момент",
+    "ru": "Я помогал другу, когда зазвонил телефон.",
+    "en": "I was helping my friend when the phone rang."
+  },
+  {
+    "verb": "help",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас помогаю коллеге.",
+    "en": "I am helping a colleague right now."
+  },
+  {
+    "verb": "help",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду помогать другу с переездом.",
+    "en": "Tomorrow at this time I will be helping my friend move."
+  },
+  {
+    "verb": "help",
+    "sit": "уже было сделано",
+    "ru": "Я уже помог другу, когда пришли гости.",
+    "en": "I had already helped my friend when the guests arrived."
+  },
+  {
+    "verb": "help",
+    "sit": "уже есть сделано",
+    "ru": "Я уже помог маме с уборкой.",
+    "en": "I have already helped my mom with the cleaning."
+  },
+  {
+    "verb": "help",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже помогу всем коллегам.",
+    "en": "By the evening I will have already helped all my colleagues."
+  },
+  {
+    "verb": "change",
+    "sit": "делалось вообще",
+    "ru": "Я изменил планы вчера.",
+    "en": "I changed my plans yesterday."
+  },
+  {
+    "verb": "change",
+    "sit": "делается вообще",
+    "ru": "Я меняю работу каждые пять лет.",
+    "en": "I change jobs every five years."
+  },
+  {
+    "verb": "change",
+    "sit": "будет делаться вообще",
+    "ru": "Я изменю расписание завтра.",
+    "en": "I will change the schedule tomorrow."
+  },
+  {
+    "verb": "change",
+    "sit": "делалось в тот момент",
+    "ru": "Я менял одежду, когда зазвонил телефон.",
+    "en": "I was changing my clothes when the phone rang."
+  },
+  {
+    "verb": "change",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас меняю пароль.",
+    "en": "I am changing my password right now."
+  },
+  {
+    "verb": "change",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду менять квартиру.",
+    "en": "Tomorrow at this time I will be changing apartments."
+  },
+  {
+    "verb": "change",
+    "sit": "уже было сделано",
+    "ru": "Я уже изменил планы, когда пришли гости.",
+    "en": "I had already changed my plans when the guests arrived."
+  },
+  {
+    "verb": "change",
+    "sit": "уже есть сделано",
+    "ru": "Я уже изменил пароль.",
+    "en": "I have already changed my password."
+  },
+  {
+    "verb": "change",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже изменю расписание.",
+    "en": "By the evening I will have already changed the schedule."
+  },
+  {
+    "verb": "like",
+    "sit": "делалось вообще",
+    "ru": "Мне понравился этот фильм вчера.",
+    "en": "I liked this movie yesterday."
+  },
+  {
+    "verb": "like",
+    "sit": "делается вообще",
+    "ru": "Мне нравится эта музыка.",
+    "en": "I like this music."
+  },
+  {
+    "verb": "like",
+    "sit": "будет делаться вообще",
+    "ru": "Тебе понравится этот подарок.",
+    "en": "You will like this gift."
+  },
+  {
+    "verb": "like",
+    "sit": "уже было сделано",
+    "ru": "Мне уже понравился этот город, когда мы туда переехали.",
+    "en": "I had already liked this city when we moved there."
+  },
+  {
+    "verb": "like",
+    "sit": "уже есть сделано",
+    "ru": "Мне всегда нравилась классическая музыка.",
+    "en": "I have always liked classical music."
+  },
+  {
+    "verb": "love",
+    "sit": "делалось вообще",
+    "ru": "Я полюбил эту книгу давно.",
+    "en": "I loved this book a long time ago."
+  },
+  {
+    "verb": "love",
+    "sit": "делается вообще",
+    "ru": "Я люблю читать по вечерам.",
+    "en": "I love reading in the evenings."
+  },
+  {
+    "verb": "love",
+    "sit": "будет делаться вообще",
+    "ru": "Ты полюбишь этот город.",
+    "en": "You will love this city."
+  },
+  {
+    "verb": "love",
+    "sit": "уже было сделано",
+    "ru": "Я уже полюбил эту песню, когда услышал её во второй раз.",
+    "en": "I had already loved this song when I heard it for the second time."
+  },
+  {
+    "verb": "love",
+    "sit": "уже есть сделано",
+    "ru": "Я всегда любил футбол.",
+    "en": "I have always loved football."
+  },
+  {
+    "verb": "hate",
+    "sit": "делалось вообще",
+    "ru": "Я сразу возненавидел эту еду.",
+    "en": "I hated this food right away."
+  },
+  {
+    "verb": "hate",
+    "sit": "делается вообще",
+    "ru": "Я ненавижу опаздывать.",
+    "en": "I hate being late."
+  },
+  {
+    "verb": "hate",
+    "sit": "будет делаться вообще",
+    "ru": "Ты возненавидишь эту работу.",
+    "en": "You will hate this job."
+  },
+  {
+    "verb": "hate",
+    "sit": "уже было сделано",
+    "ru": "Я уже возненавидел эту песню, когда услышал её десятый раз.",
+    "en": "I had already hated this song when I heard it for the tenth time."
+  },
+  {
+    "verb": "hate",
+    "sit": "уже есть сделано",
+    "ru": "Я всегда ненавидел раннее вставание.",
+    "en": "I have always hated getting up early."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "делалось вообще",
+    "ru": "Я насладился ужином вчера.",
+    "en": "I enjoyed dinner yesterday."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "делается вообще",
+    "ru": "Я получаю удовольствие от готовки по выходным.",
+    "en": "I enjoy cooking on weekends."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "будет делаться вообще",
+    "ru": "Ты получишь удовольствие от этого концерта.",
+    "en": "You will enjoy this concert."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "делалось в тот момент",
+    "ru": "Я наслаждался музыкой, когда зазвонил телефон.",
+    "en": "I was enjoying the music when the phone rang."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас наслаждаюсь книгой.",
+    "en": "I am enjoying the book right now."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду наслаждаться отпуском.",
+    "en": "Tomorrow at this time I will be enjoying my vacation."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "уже было сделано",
+    "ru": "Я уже насладился ужином, когда начался десерт.",
+    "en": "I had already enjoyed dinner when dessert started."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "уже есть сделано",
+    "ru": "Я уже получил удовольствие от этой поездки.",
+    "en": "I have already enjoyed this trip."
+  },
+  {
+    "verb": "enjoy",
+    "sit": "уже будет сделано",
+    "ru": "К концу вечера я уже получу удовольствие от концерта.",
+    "en": "By the end of the evening I will have already enjoyed the concert."
+  },
+  {
+    "verb": "want",
+    "sit": "делалось вообще",
+    "ru": "Вчера я хотел пиццу.",
+    "en": "I wanted pizza yesterday."
+  },
+  {
+    "verb": "want",
+    "sit": "делается вообще",
+    "ru": "Я хочу отдохнуть.",
+    "en": "I want to rest."
+  },
+  {
+    "verb": "want",
+    "sit": "будет делаться вообще",
+    "ru": "После тренировки я захочу пить.",
+    "en": "I will want a drink after the workout."
+  },
+  {
+    "verb": "want",
+    "sit": "уже было сделано",
+    "ru": "Я уже захотел спать, когда начался фильм.",
+    "en": "I had already wanted to sleep when the movie started."
+  },
+  {
+    "verb": "want",
+    "sit": "уже есть сделано",
+    "ru": "Я всегда хотел выучить французский.",
+    "en": "I have always wanted to learn French."
+  },
+  {
+    "verb": "need",
+    "sit": "делалось вообще",
+    "ru": "Вчера мне нужна была помощь.",
+    "en": "I needed help yesterday."
+  },
+  {
+    "verb": "need",
+    "sit": "делается вообще",
+    "ru": "Мне нужен отдых.",
+    "en": "I need a rest."
+  },
+  {
+    "verb": "need",
+    "sit": "будет делаться вообще",
+    "ru": "Завтра мне понадобится твоя помощь.",
+    "en": "I will need your help tomorrow."
+  },
+  {
+    "verb": "need",
+    "sit": "уже было сделано",
+    "ru": "Мне уже нужна была помощь, когда ты позвонил.",
+    "en": "I had already needed help when you called."
+  },
+  {
+    "verb": "need",
+    "sit": "уже есть сделано",
+    "ru": "Мне уже давно нужен отпуск.",
+    "en": "I have needed a vacation for a long time."
+  },
+  {
+    "verb": "prefer",
+    "sit": "делалось вообще",
+    "ru": "Вчера я предпочёл чай кофе.",
+    "en": "I preferred tea to coffee yesterday."
+  },
+  {
+    "verb": "prefer",
+    "sit": "делается вообще",
+    "ru": "Я предпочитаю чай кофе.",
+    "en": "I prefer tea to coffee."
+  },
+  {
+    "verb": "prefer",
+    "sit": "будет делаться вообще",
+    "ru": "Ты можешь пойти на вечеринку, а я предпочту остаться дома.",
+    "en": "You can go to the party, but I will prefer to stay home."
+  },
+  {
+    "verb": "prefer",
+    "sit": "уже было сделано",
+    "ru": "Я уже предпочёл этот вариант, когда ты предложил другой.",
+    "en": "I had already preferred this option when you suggested another one."
+  },
+  {
+    "verb": "prefer",
+    "sit": "уже есть сделано",
+    "ru": "Я всегда предпочитал книги фильмам.",
+    "en": "I have always preferred books to movies."
+  },
+  {
+    "verb": "decide",
+    "sit": "делалось вообще",
+    "ru": "Я принял решение по этому вопросу вчера.",
+    "en": "I decided on this matter yesterday."
+  },
+  {
+    "verb": "decide",
+    "sit": "делается вообще",
+    "ru": "Я обычно решаю всё быстро.",
+    "en": "I usually decide everything quickly."
+  },
+  {
+    "verb": "decide",
+    "sit": "будет делаться вообще",
+    "ru": "Я решу этот вопрос завтра.",
+    "en": "I will decide on this matter tomorrow."
+  },
+  {
+    "verb": "decide",
+    "sit": "делалось в тот момент",
+    "ru": "Я решал, что выбрать, когда зазвонил телефон.",
+    "en": "I was deciding what to choose when the phone rang."
+  },
+  {
+    "verb": "decide",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас решаю, что приготовить.",
+    "en": "I am deciding what to cook right now."
+  },
+  {
+    "verb": "decide",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду решать, куда поехать.",
+    "en": "Tomorrow at this time I will be deciding where to go."
+  },
+  {
+    "verb": "decide",
+    "sit": "уже было сделано",
+    "ru": "Я уже принял решение по этому вопросу, когда пришли коллеги.",
+    "en": "I had already decided on this matter when my colleagues arrived."
+  },
+  {
+    "verb": "decide",
+    "sit": "уже есть сделано",
+    "ru": "Я уже решил, что делать дальше.",
+    "en": "I have already decided what to do next."
+  },
+  {
+    "verb": "decide",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже решу этот вопрос.",
+    "en": "By the evening I will have already decided on this matter."
+  },
+  {
+    "verb": "explain",
+    "sit": "делалось вообще",
+    "ru": "Я объяснил задачу вчера.",
+    "en": "I explained the task yesterday."
+  },
+  {
+    "verb": "explain",
+    "sit": "делается вообще",
+    "ru": "Я всегда объясняю правила подробно.",
+    "en": "I always explain the rules in detail."
+  },
+  {
+    "verb": "explain",
+    "sit": "будет делаться вообще",
+    "ru": "Я объясню тему завтра.",
+    "en": "I will explain the topic tomorrow."
+  },
+  {
+    "verb": "explain",
+    "sit": "делалось в тот момент",
+    "ru": "Я объяснял правило, когда зазвонил телефон.",
+    "en": "I was explaining the rule when the phone rang."
+  },
+  {
+    "verb": "explain",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас объясняю задачу.",
+    "en": "I am explaining the task right now."
+  },
+  {
+    "verb": "explain",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду объяснять новую тему.",
+    "en": "Tomorrow at this time I will be explaining a new topic."
+  },
+  {
+    "verb": "explain",
+    "sit": "уже было сделано",
+    "ru": "Я уже объяснил задачу, когда прозвенел звонок.",
+    "en": "I had already explained the task when the bell rang."
+  },
+  {
+    "verb": "explain",
+    "sit": "уже есть сделано",
+    "ru": "Я уже объяснил эту тему.",
+    "en": "I have already explained this topic."
+  },
+  {
+    "verb": "explain",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже объясню весь материал.",
+    "en": "By the evening I will have already explained all the material."
+  },
+  {
+    "verb": "remember",
+    "sit": "делалось вообще",
+    "ru": "Я вспомнил его имя вчера.",
+    "en": "I remembered his name yesterday."
+  },
+  {
+    "verb": "remember",
+    "sit": "делается вообще",
+    "ru": "Я хорошо помню детство.",
+    "en": "I remember my childhood well."
+  },
+  {
+    "verb": "remember",
+    "sit": "будет делаться вообще",
+    "ru": "Я вспомню этот момент через много лет.",
+    "en": "I will remember this moment many years from now."
+  },
+  {
+    "verb": "remember",
+    "sit": "уже было сделано",
+    "ru": "Я уже вспомнил пароль, когда позвонил в поддержку.",
+    "en": "I had already remembered the password when I called support."
+  },
+  {
+    "verb": "remember",
+    "sit": "уже есть сделано",
+    "ru": "Я уже вспомнил, где оставил ключи.",
+    "en": "I have already remembered where I left my keys."
+  },
+  {
+    "verb": "remember",
+    "sit": "уже будет сделано",
+    "ru": "К встрече я уже вспомню все детали.",
+    "en": "By the meeting I will have already remembered all the details."
+  },
+  {
+    "verb": "try",
+    "sit": "делалось вообще",
+    "ru": "Я попробовал этот суп вчера.",
+    "en": "I tried this soup yesterday."
+  },
+  {
+    "verb": "try",
+    "sit": "делается вообще",
+    "ru": "Я всегда пробую новые блюда.",
+    "en": "I always try new dishes."
+  },
+  {
+    "verb": "try",
+    "sit": "будет делаться вообще",
+    "ru": "Я попробую этот рецепт завтра.",
+    "en": "I will try this recipe tomorrow."
+  },
+  {
+    "verb": "try",
+    "sit": "делалось в тот момент",
+    "ru": "Я пробовал новый рецепт, когда зазвонил телефон.",
+    "en": "I was trying a new recipe when the phone rang."
+  },
+  {
+    "verb": "try",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас пробую новое приложение.",
+    "en": "I am trying a new app right now."
+  },
+  {
+    "verb": "try",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду пробовать новый рецепт.",
+    "en": "Tomorrow at this time I will be trying a new recipe."
+  },
+  {
+    "verb": "try",
+    "sit": "уже было сделано",
+    "ru": "Я уже попробовал это блюдо, когда пришли гости.",
+    "en": "I had already tried this dish when the guests arrived."
+  },
+  {
+    "verb": "try",
+    "sit": "уже есть сделано",
+    "ru": "Я уже попробовал этот кофе.",
+    "en": "I have already tried this coffee."
+  },
+  {
+    "verb": "try",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже попробую все блюда.",
+    "en": "By the evening I will have already tried all the dishes."
+  },
+  {
+    "verb": "move",
+    "sit": "делалось вообще",
+    "ru": "Я переехал в новую квартиру в прошлом году.",
+    "en": "I moved to a new apartment last year."
+  },
+  {
+    "verb": "move",
+    "sit": "делается вообще",
+    "ru": "Я часто переезжаю из-за работы.",
+    "en": "I often move because of work."
+  },
+  {
+    "verb": "move",
+    "sit": "будет делаться вообще",
+    "ru": "Я перееду в другой город летом.",
+    "en": "I will move to another city in the summer."
+  },
+  {
+    "verb": "move",
+    "sit": "делалось в тот момент",
+    "ru": "Я переезжал, когда зазвонил телефон.",
+    "en": "I was moving when the phone rang."
+  },
+  {
+    "verb": "move",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас переезжаю в новую квартиру.",
+    "en": "I am moving to a new apartment right now."
+  },
+  {
+    "verb": "move",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду переезжать в новый офис.",
+    "en": "Tomorrow at this time I will be moving to a new office."
+  },
+  {
+    "verb": "move",
+    "sit": "уже было сделано",
+    "ru": "Я уже переехал, когда начался ремонт.",
+    "en": "I had already moved when the renovation started."
+  },
+  {
+    "verb": "move",
+    "sit": "уже есть сделано",
+    "ru": "Я уже переехал в новую квартиру.",
+    "en": "I have already moved to a new apartment."
+  },
+  {
+    "verb": "move",
+    "sit": "уже будет сделано",
+    "ru": "К осени я уже перееду в новый город.",
+    "en": "By the fall I will have already moved to a new city."
+  },
+  {
+    "verb": "stop",
+    "sit": "делалось вообще",
+    "ru": "Я остановился у магазина вчера.",
+    "en": "I stopped at the shop yesterday."
+  },
+  {
+    "verb": "stop",
+    "sit": "делается вообще",
+    "ru": "Я останавливаюсь у кафе каждое утро.",
+    "en": "I stop at a cafe every morning."
+  },
+  {
+    "verb": "stop",
+    "sit": "будет делаться вообще",
+    "ru": "Я остановлюсь у аптеки завтра.",
+    "en": "I will stop at the pharmacy tomorrow."
+  },
+  {
+    "verb": "stop",
+    "sit": "делалось в тот момент",
+    "ru": "Я останавливался у светофора, когда зазвонил телефон.",
+    "en": "I was stopping at the traffic light when the phone rang."
+  },
+  {
+    "verb": "stop",
+    "sit": "делается в этот момент",
+    "ru": "Я сейчас останавливаюсь у заправки.",
+    "en": "I am stopping at a gas station right now."
+  },
+  {
+    "verb": "stop",
+    "sit": "будет делаться в тот момент",
+    "ru": "Завтра в это время я буду останавливаться на заправке по дороге.",
+    "en": "Tomorrow at this time I will be stopping at a gas station on the way."
+  },
+  {
+    "verb": "stop",
+    "sit": "уже было сделано",
+    "ru": "Я уже остановился, когда начался дождь.",
+    "en": "I had already stopped when it started to rain."
+  },
+  {
+    "verb": "stop",
+    "sit": "уже есть сделано",
+    "ru": "Я уже остановил машину у дома.",
+    "en": "I have already stopped the car at the house."
+  },
+  {
+    "verb": "stop",
+    "sit": "уже будет сделано",
+    "ru": "К вечеру я уже остановлюсь у трёх городов.",
+    "en": "By the evening I will have already stopped at three towns."
+  }
+];
+
+let current = null;
+let score = 0;
+let timerInterval = null;
+let secondsLeft = 600;
+let timerStarted = false;
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function startTimer() {
+  if (timerStarted) return;
+  timerStarted = true;
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const el = document.getElementById('timer-display');
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (secondsLeft <= 60) el.classList.add('urgent');
+    if (secondsLeft <= 0) { clearInterval(timerInterval); showResult(); }
+  }, 1000);
+}
+
+function showResult() {
+  document.getElementById('result-score').textContent = `Счёт: ${score} из 150`;
+  if (score >= 150) {
+    document.getElementById('result-emoji').textContent = '🏆';
+    document.getElementById('result-title').textContent = 'Поздравляем, ты достиг автоматизма!';
+  } else {
+    document.getElementById('result-emoji').textContent = '💪';
+    document.getElementById('result-title').textContent = 'Ты хорошо поработал, давай еще!';
+  }
+  document.getElementById('result-modal').classList.add('open');
+}
+
+function restartGame() {
+  document.getElementById('result-modal').classList.remove('open');
+  score = 0; secondsLeft = 600; timerStarted = false; current = null;
+  document.getElementById('score-display').textContent = '0';
+  document.getElementById('timer-display').textContent = '10:00';
+  document.getElementById('timer-display').classList.remove('urgent');
+  document.getElementById('next-btn').textContent = 'Начать';
+  document.getElementById('phrase-container').classList.add('hidden');
+  document.getElementById('phrase-ru').textContent = '\u00a0';
+  const ans = document.getElementById('answer-display');
+  ans.classList.remove('visible'); ans.textContent = '';
+}
+
+function showAnswer() {
+  if (!current) return;
+  const el = document.getElementById('answer-display');
+  el.textContent = current.en;
+  el.classList.add('visible');
+}
+
+function refresh() {
+  if (current) {
+    score++;
+    document.getElementById('score-display').textContent = score;
+  }
+  startTimer();
+  current = pick(phrases);
+  document.getElementById('next-btn').textContent = 'Следующее';
+  document.getElementById('phrase-container').classList.remove('hidden');
+  const ans = document.getElementById('answer-display');
+  ans.classList.remove('visible'); ans.textContent = '';
+  const ru = document.getElementById('phrase-ru');
+  ru.classList.add('animating');
+  setTimeout(() => {
+    ru.textContent = current.ru;
+    ru.classList.remove('animating');
+  }, 130);
+}
+</script>
+</body>
+</html>

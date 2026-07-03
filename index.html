@@ -122,6 +122,12 @@
     width: 100%;
     max-width: 680px;
     margin-bottom: 0.5rem;
+    transition: max-width 0.3s ease;
+  }
+
+  .cards.four-cols {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 480px;
   }
 
   .card {
@@ -187,7 +193,38 @@
     width: 100%;
     max-width: 680px;
     justify-content: center;
+    transition: max-width 0.3s ease;
   }
+
+  .btn-row.four-cols { max-width: 480px; }
+
+  /* Toggle switch */
+  .toggle-label { display: flex; align-items: center; cursor: pointer; }
+  .toggle-label input { display: none; }
+
+  .toggle-track {
+    width: 32px;
+    height: 18px;
+    background: var(--blue-border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: left 0.2s;
+  }
+
+  .toggle-label input:checked + .toggle-track { background: var(--blue-dark); }
+  .toggle-label input:checked + .toggle-track::after { left: 17px; }
 
   .action-btn {
     flex: 1;
@@ -219,7 +256,8 @@
   .action-btn:active { transform: scale(0.97); }
 
   .answer-display {
-    height: 36px;
+    min-height: 36px;
+    height: auto;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
     font-size: 20px;
@@ -256,7 +294,7 @@
   #timer-display.urgent { color: #c0392b; }
 
   @media (max-width: 520px) {
-    .cards { grid-template-columns: 1fr; }
+    .cards { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -266,6 +304,7 @@
   <div class="header-row">
     <h1>English Verb Trainer</h1>
     <button class="info-btn" onclick="openModal()">i</button>
+    <input type="checkbox" id="qtype-toggle" style="display:none" onchange="toggleQtype()" />
   </div>
   <div class="stats-row">
     <span class="stat-item" id="timer-display">10:00</span>
@@ -318,7 +357,12 @@
   <div class="card">
     <div class="card-main small" id="tense">Ситуация</div>
     <div class="card-sub" id="tense-sub">&nbsp;</div>
-  </div></div>
+  </div>
+  <div class="card" id="qtype-card" style="display:none;">
+    <div class="card-main small" id="qtype">Тип</div>
+    <div class="card-sub" id="qtype-sub">&nbsp;</div>
+  </div>
+</div>
 
 <div class="answer-display" id="answer-display"></div>
 
@@ -367,7 +411,16 @@ const situations = [
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-let current = { pronoun: null, verb: null, sit: null };
+const qtypes = [
+  'Общий вопрос',
+  'Where',
+  'When',
+  'Why',
+  'How',
+  'Переспрашивание'
+];
+
+let current = { pronoun: null, verb: null, sit: null, qtype: null };
 let usedHint = false;
 let score = 0;
 let timerInterval = null;
@@ -420,7 +473,11 @@ function restartGame() {
   secondsLeft = 600;
   timerStarted = false;
   usedHint = false;
-  current = { pronoun: null, verb: null, sit: null };
+  current = { pronoun: null, verb: null, sit: null, qtype: null };
+  document.getElementById('qtype-toggle').checked = false;
+  document.getElementById('qtype-card').style.display = 'none';
+  document.querySelector('.cards').classList.remove('four-cols');
+  document.querySelector('.btn-row').classList.remove('four-cols');
   document.getElementById('score-display').textContent = '0';
   document.getElementById('timer-display').textContent = '10:00';
   document.getElementById('timer-display').classList.remove('urgent');
@@ -433,9 +490,10 @@ function restartGame() {
   animateCard('verb', 'Глагол');
   animateCard('verb-ru', '\u00a0');
   animateCard('tense', 'Ситуация');
+  animateCard('qtype', 'Тип');
 }
 
-function conjugate(pronoun, verb, sit) {
+function conjugate(pronoun, verb, sit, qtype) {
   const p = pronoun.en;
   const v = verb.en;
   const he = ['He','She','It'].includes(p);
@@ -455,32 +513,131 @@ function conjugate(pronoun, verb, sit) {
     return v + 'ing';
   }
 
-  const be = p==='I' ? 'am' : he ? 'is' : 'are';
-  const was = (p==='I'||he) ? 'was' : 'were';
-  const have = he ? 'has' : 'have';
+  const be    = p==='I' ? 'am' : he ? 'is' : 'are';
+  const was   = (p==='I'||he) ? 'was' : 'were';
+  const have  = he ? 'has' : 'have';
 
-  switch(sit) {
-    case 'делалось вообще':        return `${p} ${addED(v)}`;
-    case 'делается вообще':        return `${p} ${he ? addS(v) : v}`;
-    case 'будет делаться вообще':  return `${p} will ${v}`;
-    case 'делалось в тот момент':  return `${p} ${was} ${addING(v)}`;
-    case 'делается в этот момент': return `${p} ${be} ${addING(v)}`;
-    case 'будет делаться в тот момент': return `${p} will be ${addING(v)}`;
-    case 'уже было сделано':       return `${p} had ${addED(v)}`;
-    case 'уже есть сделано':       return `${p} ${have} ${addED(v)}`;
-    case 'уже будет сделано':      return `${p} will have ${addED(v)}`;
-    case 'делалось бы вообще':     return `${p} would ${v}`;
-    case 'было бы сделано':        return `${p} would have ${addED(v)}`;
-    default: return '';
+  // helpers for auxiliary extraction
+  function getAux(sit) {
+    switch(sit) {
+      case 'делалось вообще':             return {aux:'did',    neg:'didn\'t'};
+      case 'делается вообще':             return {aux: he?'does':'do', neg: he?'doesn\'t':'don\'t'};
+      case 'будет делаться вообще':       return {aux:'will',   neg:'won\'t'};
+      case 'делалось в тот момент':       return {aux:was,      neg:was+'n\'t'};
+      case 'делается в этот момент':      return {aux:be,       neg:be+'n\'t'};
+      case 'будет делаться в тот момент': return {aux:'will',   neg:'won\'t'};
+      case 'уже было сделано':            return {aux:'had',    neg:'hadn\'t'};
+      case 'уже есть сделано':            return {aux:have,     neg: have+'n\'t'};
+      case 'уже будет сделано':           return {aux:'will',   neg:'won\'t'};
+      case 'делалось бы вообще':          return {aux:'would',  neg:'wouldn\'t'};
+      case 'было бы сделано':             return {aux:'would',  neg:'wouldn\'t'};
+      default: return {aux:'do', neg:'don\'t'};
+    }
+  }
+
+  // base affirmative
+  function affirmative() {
+    switch(sit) {
+      case 'делалось вообще':             return `${p} ${addED(v)}`;
+      case 'делается вообще':             return `${p} ${he ? addS(v) : v}`;
+      case 'будет делаться вообще':       return `${p} will ${v}`;
+      case 'делалось в тот момент':       return `${p} ${was} ${addING(v)}`;
+      case 'делается в этот момент':      return `${p} ${be} ${addING(v)}`;
+      case 'будет делаться в тот момент': return `${p} will be ${addING(v)}`;
+      case 'уже было сделано':            return `${p} had ${addED(v)}`;
+      case 'уже есть сделано':            return `${p} ${have} ${addED(v)}`;
+      case 'уже будет сделано':           return `${p} will have ${addED(v)}`;
+      case 'делалось бы вообще':          return `${p} would ${v}`;
+      case 'было бы сделано':             return `${p} would have ${addED(v)}`;
+      default: return '';
+    }
+  }
+
+  // general question (inversion)
+  function generalQ() {
+    const {aux} = getAux(sit);
+    switch(sit) {
+      case 'делалось вообще':             return `Did ${p} ${v}?`;
+      case 'делается вообще':             return `${he?'Does':'Do'} ${p} ${v}?`;
+      case 'будет делаться вообще':       return `Will ${p} ${v}?`;
+      case 'делалось в тот момент':       return `${was.charAt(0).toUpperCase()+was.slice(1)} ${p} ${addING(v)}?`;
+      case 'делается в этот момент':      return `${be.charAt(0).toUpperCase()+be.slice(1)} ${p} ${addING(v)}?`;
+      case 'будет делаться в тот момент': return `Will ${p} be ${addING(v)}?`;
+      case 'уже было сделано':            return `Had ${p} ${addED(v)}?`;
+      case 'уже есть сделано':            return `${have.charAt(0).toUpperCase()+have.slice(1)} ${p} ${addED(v)}?`;
+      case 'уже будет сделано':           return `Will ${p} have ${addED(v)}?`;
+      case 'делалось бы вообще':          return `Would ${p} ${v}?`;
+      case 'было бы сделано':             return `Would ${p} have ${addED(v)}?`;
+      default: return '';
+    }
+  }
+
+  // special question with wh-word
+  function specialQ(wh) {
+    const gq = generalQ();
+    // insert wh-word before the auxiliary (first word)
+    return `${wh} ${gq.charAt(0).toLowerCase()}${gq.slice(1)}`;
+  }
+
+  // tag question
+  function tagQ() {
+    const aff = affirmative();
+    const {aux, neg} = getAux(sit);
+    const tagPron = p==='I' ? 'I' : p.toLowerCase();
+    return `${aff}, ${neg} ${tagPron}?`;
+  }
+
+  switch(qtype) {
+    case 'Утверждение':      return affirmative();
+    case 'Общий вопрос':     return generalQ();
+    case 'Where':            return specialQ('Where');
+    case 'When':             return specialQ('When');
+    case 'Why':              return specialQ('Why');
+    case 'How':              return specialQ('How');
+    case 'Переспрашивание':  return tagQ();
+    default:                 return affirmative();
   }
 }
 
 function showAnswer() {
   if (!current.pronoun) return;
   usedHint = true;
-  const answer = conjugate(current.pronoun, current.verb, current.sit);
+  const question = conjugate(current.pronoun, current.verb, current.sit, current.qtype);
   const el = document.getElementById('answer-display');
-  el.textContent = answer;
+
+  const qtypeOn = document.getElementById('qtype-toggle').checked;
+
+  if (qtypeOn && (current.qtype === 'Общий вопрос' || current.qtype === 'Переспрашивание')) {
+    const p = current.pronoun.en;
+    const he = ['He','She','It'].includes(p);
+    const sit = current.sit;
+
+    function getShortAux() {
+      switch(sit) {
+        case 'делалось вообще':             return {pos:'did',   neg:"didn't"};
+        case 'делается вообще':             return {pos:he?'does':'do', neg:he?"doesn't":"don't"};
+        case 'будет делаться вообще':       return {pos:'will',  neg:"won't"};
+        case 'делалось в тот момент':       return {pos:(p==='I'||he)?'was':'were', neg:(p==='I'||he)?"wasn't":"weren't"};
+        case 'делается в этот момент':      return {pos:p==='I'?'am':he?'is':'are', neg:p==='I'?"am not":he?"isn't":"aren't"};
+        case 'будет делаться в тот момент': return {pos:'will',  neg:"won't"};
+        case 'уже было сделано':            return {pos:'had',   neg:"hadn't"};
+        case 'уже есть сделано':            return {pos:he?'has':'have', neg:he?"hasn't":"haven't"};
+        case 'уже будет сделано':           return {pos:'will',  neg:"won't"};
+        case 'делалось бы вообще':          return {pos:'would', neg:"wouldn't"};
+        case 'было бы сделано':             return {pos:'would', neg:"wouldn't"};
+        default: return {pos:'do', neg:"don't"};
+      }
+    }
+
+    const {pos, neg} = getShortAux();
+    const tagPron = p.toLowerCase();
+    const yesAnswer = `Yes, ${tagPron} ${pos}`;
+    const noAnswer  = `No, ${tagPron} ${neg}`;
+    el.innerHTML = `${question}<br><span style="font-size:14px;color:#3a7aaa;">${yesAnswer} &nbsp;/&nbsp; ${noAnswer}</span>`;
+  } else {
+    el.textContent = question;
+  }
+
   el.classList.add('visible');
 }
 
@@ -495,8 +652,8 @@ function animateCard(id, val, large) {
 }
 
 function refresh() {
-  // count score if no hint was used (skip first round)
-  if (current.pronoun && !usedHint) {
+  // count score always (skip first round)
+  if (current.pronoun) {
     score++;
     document.getElementById('score-display').textContent = score;
   }
@@ -507,6 +664,7 @@ function refresh() {
   current.pronoun = pick(pronouns);
   current.verb = pick(verbs);
   current.sit = pick(situations);
+  current.qtype = document.getElementById('qtype-toggle').checked ? pick(qtypes) : 'Утверждение';
 
   // change button text after first click
   document.getElementById('next-btn').textContent = 'Следующее';
@@ -528,6 +686,24 @@ function refresh() {
     animateCard('tense', current.sit);
     animateCard('tense-sub', '\u00a0');
   }, 120);
+
+  if (document.getElementById('qtype-toggle').checked) {
+    setTimeout(() => {
+      animateCard('qtype', current.qtype);
+      animateCard('qtype-sub', '\u00a0');
+    }, 180);
+  }
+}
+
+function toggleQtype() {
+  const on = document.getElementById('qtype-toggle').checked;
+  document.getElementById('qtype-card').style.display = on ? '' : 'none';
+  document.querySelector('.cards').classList.toggle('four-cols', on);
+  document.querySelector('.btn-row').classList.toggle('four-cols', on);
+  if (!on) {
+    current.qtype = null;
+    animateCard('qtype', 'Тип');
+  }
 }
 
 function openModal() {

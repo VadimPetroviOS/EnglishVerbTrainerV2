@@ -180,7 +180,7 @@
 
 <div class="counter" id="counter" style="opacity:0;">1 / 353</div>
 
-<video id="video" src="https://res.cloudinary.com/ufbidw3j/video/upload/s01e01p01_nmg8q6.mp4" preload="auto"></video>
+<video id="video" src="https://res.cloudinary.com/ufbidw3j/video/upload/s01e01p01_nmg8q6.mp4" preload="metadata" playsinline></video>
 
 <div class="answer-block" id="answer-block">
   <div class="answer-en" id="answer-display"></div>
@@ -194,7 +194,7 @@
   <button class="action-btn btn-next" id="next-btn" onclick="next()">Следующее →</button>
 </div>
 
-<div id="start-row" class="btn-row" style="justify-content:center;opacity:0;pointer-events:none;">
+<div id="start-row" class="btn-row" style="justify-content:center;">
   <button class="action-btn btn-next" style="max-width:200px;" onclick="startListening()">Начать</button>
 </div>
 
@@ -2389,12 +2389,6 @@ function startListening() {
 }
 
 // No auto-play on load
-video.addEventListener('canplay', () => {
-  document.getElementById('loading-msg').style.display = 'none';
-  const startRow = document.getElementById('start-row');
-  startRow.style.opacity = '1';
-  startRow.style.pointerEvents = 'auto';
-}, { once: true });
 </script>
 </body>
 </html>

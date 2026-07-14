@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>English Verb Trainer</title>
+<title>Аудирование</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --blue-light: #daeeff;
     --blue-hover: #c4e4f8;
@@ -17,7 +16,6 @@
     --radius-card: 20px;
     --radius-btn: 50px;
   }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
@@ -28,31 +26,33 @@
     justify-content: center;
     padding: 2.5rem 1.25rem 3rem;
     color: var(--blue-dark);
+    gap: 1.5rem;
   }
-
-  header {
-    text-align: center;
-    margin-bottom: 2.5rem;
+  header { text-align: center; }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
-
-  header h1 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--blue-dark);
-    letter-spacing: -0.01em;
+  .back-btn {
+    background: none; border: none;
+    font-size: 20px; color: var(--blue-label);
+    cursor: pointer; padding: 0 4px;
+    line-height: 1; transition: color 0.15s;
   }
-
-  .mode-row {
+  .back-btn:hover { color: var(--blue-dark); }
+  header h1 { font-size: 20px; font-weight: 600; color: var(--blue-dark); }
+  .subtitle { font-size: 13px; color: var(--blue-label); margin-top: 6px; }
+  .menu {
     display: flex;
     flex-direction: column;
     gap: 12px;
     width: 100%;
-    max-width: 280px;
+    max-width: 300px;
   }
-
-  .mode-btn {
+  .menu-btn {
     width: 100%;
-    height: auto;
     padding: 18px 24px;
     border-radius: var(--radius-btn);
     border: 1.5px solid var(--blue-border);
@@ -64,24 +64,20 @@
     transition: background 0.15s, transform 0.1s;
     font-family: inherit;
   }
-
-  .mode-btn:hover { background: var(--blue-hover); }
-  .mode-btn:active { transform: scale(0.97); }
+  .menu-btn:hover { background: var(--blue-hover); }
+  .menu-btn:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
-
 <header>
-  <h1>English Verb Trainer</h1>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='index.html'">←</button>
+    <h1>Аудирование</h1>
+  </div>
+  <div class="subtitle">Выберите сериал</div>
 </header>
-
-<div class="mode-row">
-  <button class="mode-btn" onclick="location.href='verbs.html'">Глаголы</button>
-  <button class="mode-btn" onclick="location.href='questions.html'">Вопросы</button>
-  <button class="mode-btn" onclick="location.href='phrases.html'">Фразы</button>
-  <button class="mode-btn" onclick="location.href='prepositions.html'">Предлоги</button>
-  <button class="mode-btn" onclick="location.href='listening.html'">Аудирование</button>
+<div class="menu">
+  <button class="menu-btn" onclick="location.href='friends.html'">Друзья</button>
 </div>
-
 </body>
 </html>

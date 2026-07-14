@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Друзья</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-btn: 50px;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+    gap: 1.5rem;
+  }
+  header { text-align: center; }
+  .header-row {
+    display: flex; align-items: center;
+    justify-content: center; gap: 8px;
+  }
+  .back-btn {
+    background: none; border: none;
+    font-size: 20px; color: var(--blue-label);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+  header h1 { font-size: 20px; font-weight: 600; color: var(--blue-dark); }
+  .subtitle { font-size: 13px; color: var(--blue-label); margin-top: 6px; }
+  .menu {
+    display: flex; flex-direction: column;
+    gap: 12px; width: 100%; max-width: 300px;
+  }
+  .menu-btn {
+    width: 100%; padding: 18px 24px;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    font-size: 16px; font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .menu-btn:hover { background: var(--blue-hover); }
+  .menu-btn:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='listening.html'">←</button>
+    <h1>Друзья</h1>
+  </div>
+  <div class="subtitle">Выберите серию</div>
+</header>
+<div class="menu">
+  <button class="menu-btn" onclick="location.href='friends-s01e01.html'">S01E01 — Пилот</button>
+</div>
+</body>
+</html>

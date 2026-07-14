@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Предлоги — Verb Trainer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --green: #2e9e5b;
+    --green-light: #edfdf4;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+    gap: 1.25rem;
+  }
+
+  header { text-align: center; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--blue-label);
+  }
+  .stat-sep { opacity: 0.4; }
+  #timer-display {
+    font-weight: 600;
+    color: var(--blue-dark);
+    font-variant-numeric: tabular-nums;
+  }
+  #timer-display.urgent { color: var(--red); }
+
+  /* Sentence card */
+  .sentence-card {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    border-radius: var(--radius-card);
+    padding: 1.75rem 1.5rem;
+    width: 100%;
+    max-width: 480px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .sentence-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    line-height: 1.5;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+  .sentence-text.animating { opacity: 0; transform: translateY(6px); }
+
+  .blank {
+    display: inline-block;
+    min-width: 48px;
+    border-bottom: 2px solid var(--blue-dark);
+    margin: 0 4px;
+  }
+
+  /* Tag */
+  .topic-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--blue-label);
+  }
+
+  /* Options */
+  .options-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 480px;
+    justify-content: center;
+  }
+
+  .option-btn {
+    flex: 1;
+    padding: 14px 8px;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid var(--blue-border);
+    background: #fff;
+    color: var(--blue-dark);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .option-btn:hover:not(:disabled) { background: var(--blue-light); }
+  .option-btn:active:not(:disabled) { transform: scale(0.97); }
+  .option-btn:disabled { cursor: default; }
+
+  .option-btn.correct {
+    background: var(--green-light);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .option-btn.wrong {
+    background: var(--red-light);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* Rule */
+  .rule-box {
+    width: 100%;
+    max-width: 480px;
+    min-height: 48px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--blue-label);
+    font-style: italic;
+    line-height: 1.5;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .rule-box.visible { opacity: 1; }
+
+  /* Next button */
+  .next-btn {
+    width: 100%;
+    max-width: 480px;
+    padding: 14px 24px;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, opacity 0.2s;
+    font-family: inherit;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .next-btn:hover { background: var(--blue-hover); }
+  .next-btn:active { transform: scale(0.97); }
+  .next-btn.visible { opacity: 1; pointer-events: auto; }
+
+  .info-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    color: var(--blue-label);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .info-btn:hover { background: var(--blue-hover); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    position: relative;
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; color: var(--blue-dark); margin-bottom: 1rem; }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    background: none; border: none;
+    font-size: 20px; color: var(--blue-label);
+    cursor: pointer; line-height: 1;
+  }
+  .modal-close:hover { color: var(--blue-dark); }
+
+  .prep-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .prep-table th {
+    text-align: left;
+    padding: 6px 8px;
+    color: var(--blue-label);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1.5px solid var(--blue-border);
+  }
+  .prep-table td {
+    padding: 6px 8px;
+    color: var(--blue-dark);
+    border-bottom: 1px solid #eef5fb;
+    vertical-align: top;
+  }
+  .prep-table td:first-child {
+    font-weight: 600;
+    color: var(--blue-label);
+    white-space: nowrap;
+  }
+  .prep-table tr:last-child td { border-bottom: none; }
+
+  .modal-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 1rem;
+  }
+  .modal-btn:hover { background: var(--blue-hover); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='index.html'">←</button>
+    <h1>Предлоги</h1>
+    <button class="info-btn" onclick="openInfo()">i</button>
+  </div>
+</header>
+
+<div class="stats-row">
+  <span id="timer-display">10:00</span>
+  <span class="stat-sep">·</span>
+  <span>Счёт: <strong id="score-display">0</strong></span>
+</div>
+
+<!-- Info modal -->
+<div class="modal-overlay" id="info-modal" onclick="closeInfoOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeInfo()">×</button>
+    <h2>Таблица предлогов</h2>
+    <table class="prep-table">
+      <tr><th>Предлог</th><th>Значение</th><th>Пример</th></tr>
+      <tr><td>in</td><td>в (место/время)</td><td>She lives in London. / I was born in 1990.</td></tr>
+      <tr><td>on</td><td>на (поверхность/дата)</td><td>The book is on the table. / See you on Monday.</td></tr>
+      <tr><td>at</td><td>в/у (точка места/времени)</td><td>We met at the station. / The class starts at 9 AM.</td></tr>
+      <tr><td>under</td><td>под</td><td>The cat is under the bed.</td></tr>
+      <tr><td>over</td><td>над/через</td><td>A plane flew over the city.</td></tr>
+      <tr><td>above</td><td>над (без контакта)</td><td>The plane flew above the clouds.</td></tr>
+      <tr><td>below</td><td>под/ниже</td><td>The temperature is below zero.</td></tr>
+      <tr><td>behind</td><td>за, позади</td><td>He hid behind the door.</td></tr>
+      <tr><td>between</td><td>между (двумя)</td><td>The shop is between the bank and the café.</td></tr>
+      <tr><td>among</td><td>среди (более двух)</td><td>She was among friends.</td></tr>
+      <tr><td>near</td><td>около, рядом</td><td>The hotel is near the beach.</td></tr>
+      <tr><td>beside</td><td>рядом с</td><td>Sit beside me.</td></tr>
+      <tr><td>by</td><td>у, около; к (сроку)</td><td>She stood by the window. / Finish it by Friday.</td></tr>
+      <tr><td>inside</td><td>внутри</td><td>The keys are inside the bag.</td></tr>
+      <tr><td>outside</td><td>снаружи</td><td>Wait outside the building.</td></tr>
+      <tr><td>opposite</td><td>напротив</td><td>The park is opposite my house.</td></tr>
+      <tr><td>against</td><td>против, к</td><td>He leaned against the wall.</td></tr>
+      <tr><td>through</td><td>через, сквозь</td><td>We walked through the forest.</td></tr>
+      <tr><td>across</td><td>через (поперёк)</td><td>She swam across the river.</td></tr>
+      <tr><td>around</td><td>вокруг</td><td>They sat around the table.</td></tr>
+      <tr><td>along</td><td>вдоль</td><td>We walked along the beach.</td></tr>
+      <tr><td>before</td><td>до, перед</td><td>Wash your hands before dinner.</td></tr>
+      <tr><td>after</td><td>после</td><td>We'll talk after the meeting.</td></tr>
+      <tr><td>during</td><td>во время</td><td>She fell asleep during the film.</td></tr>
+      <tr><td>since</td><td>с (какого-то момента)</td><td>I haven't seen him since 2020.</td></tr>
+      <tr><td>until / till</td><td>до (какого-то момента)</td><td>Wait until I call you.</td></tr>
+      <tr><td>within</td><td>в пределах (времени)</td><td>We'll reply within 24 hours.</td></tr>
+      <tr><td>past</td><td>мимо; после (времени)</td><td>It's half past three.</td></tr>
+      <tr><td>to</td><td>к, в (направление)</td><td>She went to the store.</td></tr>
+      <tr><td>into</td><td>внутрь</td><td>He walked into the room.</td></tr>
+      <tr><td>onto</td><td>на (движение сверху)</td><td>The cat jumped onto the table.</td></tr>
+      <tr><td>from</td><td>от, из</td><td>This letter is from my friend.</td></tr>
+      <tr><td>towards</td><td>по направлению к</td><td>He walked towards the exit.</td></tr>
+      <tr><td>up</td><td>вверх</td><td>She climbed up the ladder.</td></tr>
+      <tr><td>down</td><td>вниз</td><td>He ran down the stairs.</td></tr>
+      <tr><td>out of</td><td>из (наружу)</td><td>She took the money out of her pocket.</td></tr>
+      <tr><td>off</td><td>от, с (поверхности)</td><td>Take the vase off the shelf.</td></tr>
+      <tr><td>with</td><td>с</td><td>I came with my sister.</td></tr>
+      <tr><td>without</td><td>без</td><td>He left without saying goodbye.</td></tr>
+      <tr><td>of</td><td>принадлежность/часть</td><td>The cover of the book is red.</td></tr>
+      <tr><td>for</td><td>для, ради; в течение</td><td>This gift is for you. / I waited for an hour.</td></tr>
+      <tr><td>about</td><td>о, около</td><td>We talked about the trip.</td></tr>
+      <tr><td>like</td><td>как, подобно</td><td>He swims like a fish.</td></tr>
+      <tr><td>as</td><td>как (в роли)</td><td>She works as a teacher.</td></tr>
+      <tr><td>except</td><td>кроме</td><td>Everyone came except Tom.</td></tr>
+      <tr><td>via</td><td>через, посредством</td><td>We flew to Rome via Paris.</td></tr>
+      <tr><td>per</td><td>за, согласно</td><td>The fee is $10 per hour.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="result-modal">
+  <div class="modal">
+    <div id="result-emoji" style="font-size:40px;margin-bottom:12px;"></div>
+    <h2 id="result-title"></h2>
+    <p id="result-score"></p>
+    <button class="modal-btn" onclick="restartGame()">Начать заново</button>
+  </div>
+</div>
+
+<div class="sentence-card" id="sentence-card">
+  <div>
+    <div class="topic-tag" id="topic-tag"></div>
+    <div class="sentence-text" id="sentence-text">Нажми «Начать»</div>
+  </div>
+</div>
+
+<div class="options-row" id="options-row">
+  <button class="option-btn" id="opt-0" onclick="choose(0)"></button>
+  <button class="option-btn" id="opt-1" onclick="choose(1)"></button>
+  <button class="option-btn" id="opt-2" onclick="choose(2)"></button>
+</div>
+
+<div class="rule-box" id="rule-box"></div>
+
+<button class="next-btn" id="next-btn" onclick="nextQuestion()">Дальше →</button>
+
+<script>
+const questions = [
+  // МЕСТО — in/on/at
+  { topic:"Место", sentence:"She lives ___ London.", options:["in","on","at"], correct:"in", rule:"Для городов и стран используем in." },
+  { topic:"Место", sentence:"The book is ___ the table.", options:["on","in","at"], correct:"on", rule:"На поверхности — on." },
+  { topic:"Место", sentence:"Meet me ___ the airport.", options:["at","in","on"], correct:"at", rule:"Для конкретных точек и мест встречи — at." },
+  { topic:"Место", sentence:"He works ___ a small office.", options:["in","at","on"], correct:"in", rule:"Внутри закрытого пространства — in." },
+  { topic:"Место", sentence:"They met ___ the corner.", options:["at","on","in"], correct:"at", rule:"Угол улицы как точка на пути — at." },
+  { topic:"Место", sentence:"The cat is ___ the box.", options:["in","on","at"], correct:"in", rule:"Внутри чего-либо — in." },
+  { topic:"Место", sentence:"There's a picture ___ the wall.", options:["on","in","at"], correct:"on", rule:"Прикреплено к поверхности — on." },
+  { topic:"Место", sentence:"She is ___ home.", options:["at","in","on"], correct:"at", rule:"At home — устойчивое выражение." },
+  { topic:"Место", sentence:"The kids are playing ___ the park.", options:["in","at","on"], correct:"in", rule:"Парк как закрытое пространство с границами — in." },
+  { topic:"Место", sentence:"I saw her ___ the bus stop.", options:["at","on","in"], correct:"at", rule:"Остановка — точка на маршруте, at." },
+  { topic:"Место", sentence:"He sat ___ the front row.", options:["in","on","at"], correct:"in", rule:"Ряд как пространство, в котором сидишь — in." },
+  { topic:"Место", sentence:"The town is ___ the river.", options:["on","at","in"], correct:"on", rule:"Город расположен вдоль реки — on." },
+
+  // ВРЕМЯ — in/on/at
+  { topic:"Время", sentence:"I wake up ___ 7 a.m.", options:["at","in","on"], correct:"at", rule:"Точное время — at." },
+  { topic:"Время", sentence:"She was born ___ 1995.", options:["in","at","on"], correct:"in", rule:"Год, месяц, сезон — in." },
+  { topic:"Время", sentence:"We have a meeting ___ Monday.", options:["on","in","at"], correct:"on", rule:"Дни недели и конкретные даты — on." },
+  { topic:"Время", sentence:"It gets cold ___ winter.", options:["in","on","at"], correct:"in", rule:"Времена года — in." },
+  { topic:"Время", sentence:"He called me ___ midnight.", options:["at","on","in"], correct:"at", rule:"Полночь, полдень, рассвет — at." },
+  { topic:"Время", sentence:"The concert is ___ Friday evening.", options:["on","at","in"], correct:"on", rule:"День недели + часть суток — on." },
+  { topic:"Время", sentence:"I'll see you ___ the morning.", options:["in","on","at"], correct:"in", rule:"Части суток без конкретного дня — in." },
+  { topic:"Время", sentence:"She left ___ Christmas.", options:["at","on","in"], correct:"at", rule:"Праздники без слова Day — at." },
+  { topic:"Время", sentence:"He died ___ the age of 90.", options:["at","in","on"], correct:"at", rule:"At the age of — устойчивое выражение." },
+  { topic:"Время", sentence:"I'll finish ___ the end of the week.", options:["at","in","on"], correct:"at", rule:"At the end / at the beginning — устойчивые выражения." },
+
+  // ВРЕМЯ — for/since/during
+  { topic:"Время", sentence:"I've lived here ___ 2010.", options:["since","for","during"], correct:"since", rule:"С конкретного момента в прошлом до сейчас — since." },
+  { topic:"Время", sentence:"She studied ___ three hours.", options:["for","since","during"], correct:"for", rule:"Продолжительность времени — for." },
+  { topic:"Время", sentence:"He fell asleep ___ the movie.", options:["during","for","since"], correct:"during", rule:"Внутри события или периода — during." },
+  { topic:"Время", sentence:"We haven't spoken ___ years.", options:["for","since","during"], correct:"for", rule:"Продолжительность без точки начала — for." },
+  { topic:"Время", sentence:"I met her ___ the conference.", options:["during","for","since"], correct:"during", rule:"В ходе конкретного события — during." },
+  { topic:"Время", sentence:"She's been waiting ___ noon.", options:["since","for","during"], correct:"since", rule:"С конкретного времени суток — since." },
+
+  // НАПРАВЛЕНИЕ — to/into/onto/from
+  { topic:"Направление", sentence:"She walked ___ the room.", options:["into","to","onto"], correct:"into", rule:"Движение внутрь пространства — into." },
+  { topic:"Направление", sentence:"He jumped ___ the stage.", options:["onto","into","to"], correct:"onto", rule:"Движение на поверхность сверху — onto." },
+  { topic:"Направление", sentence:"I'm going ___ the supermarket.", options:["to","into","onto"], correct:"to", rule:"Направление к месту назначения — to." },
+  { topic:"Направление", sentence:"She came ___ Italy last year.", options:["from","to","into"], correct:"from", rule:"Исходная точка, откуда — from." },
+  { topic:"Направление", sentence:"The cat jumped ___ the sofa.", options:["onto","into","to"], correct:"onto", rule:"Прыжок на поверхность — onto." },
+  { topic:"Направление", sentence:"He drove ___ the garage.", options:["into","onto","to"], correct:"into", rule:"Въезд внутрь пространства — into." },
+  { topic:"Направление", sentence:"She moved ___ a new apartment.", options:["into","to","onto"], correct:"into", rule:"Переезд внутрь нового жилья — into." },
+  { topic:"Направление", sentence:"We flew ___ Paris to London.", options:["from","to","into"], correct:"from", rule:"Исходная точка маршрута — from." },
+
+  // УСТОЙЧИВЫЕ СОЧЕТАНИЯ
+  { topic:"Устойчивые", sentence:"She is very good ___ math.", options:["at","in","on"], correct:"at", rule:"Хорошо в каком-то навыке — good at." },
+  { topic:"Устойчивые", sentence:"It depends ___ the weather.", options:["on","of","from"], correct:"on", rule:"Зависеть от чего-то — depend on." },
+  { topic:"Устойчивые", sentence:"He is interested ___ history.", options:["in","of","at"], correct:"in", rule:"Интересоваться чем-то — interested in." },
+  { topic:"Устойчивые", sentence:"She apologized ___ being late.", options:["for","of","about"], correct:"for", rule:"Извиниться за что-то — apologize for." },
+  { topic:"Устойчивые", sentence:"I'm tired ___ waiting.", options:["of","from","with"], correct:"of", rule:"Надоело, устал морально — tired of." },
+  { topic:"Устойчивые", sentence:"He's afraid ___ spiders.", options:["of","from","about"], correct:"of", rule:"Бояться чего-то — afraid of." },
+  { topic:"Устойчивые", sentence:"She dreamed ___ travelling the world.", options:["of","about","for"], correct:"of", rule:"Мечтать о чём-то как о цели — dream of." },
+  { topic:"Устойчивые", sentence:"They argued ___ money.", options:["about","of","on"], correct:"about", rule:"Спорить на тему чего-то — argue about." },
+  { topic:"Устойчивые", sentence:"He succeeded ___ passing the exam.", options:["in","at","on"], correct:"in", rule:"Преуспеть в каком-то деле — succeed in." },
+  { topic:"Устойчивые", sentence:"I'm looking forward ___ seeing you.", options:["to","for","at"], correct:"to", rule:"Ждать с нетерпением — look forward to." },
+  { topic:"Устойчивые", sentence:"She complained ___ the noise.", options:["about","of","on"], correct:"about", rule:"Жаловаться на что-то — complain about." },
+  { topic:"Устойчивые", sentence:"He insisted ___ paying the bill.", options:["on","in","at"], correct:"on", rule:"Настаивать на чём-то — insist on." },
+  { topic:"Устойчивые", sentence:"She belongs ___ a book club.", options:["to","in","at"], correct:"to", rule:"Принадлежать к группе — belong to." },
+  { topic:"Устойчивые", sentence:"I'm not familiar ___ this author.", options:["with","of","about"], correct:"with", rule:"Знаком с чем-то/кем-то — familiar with." },
+  { topic:"Устойчивые", sentence:"He's responsible ___ the project.", options:["for","of","to"], correct:"for", rule:"Ответственный за что-то — responsible for." },
+  { topic:"Место", sentence:"The book is ___ the table.", options:["on","in","at"], correct:"on", rule:"On — предмет лежит на поверхности. In — был бы внутри (в ящике стола). At — это точка, а не физическое положение." },
+  { topic:"Место", sentence:"Meet me ___ the airport.", options:["at","in","on"], correct:"at", rule:"At — место как точка встречи, пункт назначения. In — был бы если ты уже внутри здания аэропорта и описываешь где именно. On — для поверхностей, не для мест." },
+  { topic:"Место", sentence:"He works ___ a small office.", options:["in","at","on"], correct:"in", rule:"In — ты физически внутри помещения. At the office тоже возможно, но in подчёркивает что ты внутри пространства, а не просто указывает на место работы." },
+  { topic:"Место", sentence:"They met ___ the corner.", options:["at","on","in"], correct:"at", rule:"At — для угла улицы как точки. On the corner тоже используется (особенно в американском английском), но at подчёркивает именно точку встречи." },
+  { topic:"Место", sentence:"The cat is ___ the box.", options:["in","on","at"], correct:"in", rule:"In — предмет находится внутри другого. On — было бы если кот на крышке коробки. At — для точек и мест назначения, не для физического положения." },
+  { topic:"Место", sentence:"There's a picture ___ the wall.", options:["on","in","at"], correct:"on", rule:"On — картина прикреплена к поверхности стены. In the wall означало бы что она встроена в стену (странно). At the wall не описывает где висит картина." },
+  { topic:"Место", sentence:"She is ___ home.", options:["at","in","on"], correct:"at", rule:"At home — устойчивое выражение. At здесь значит 'в данной точке/месте'. In home — не используется. On home — бессмысленно." },
+  { topic:"Место", sentence:"The kids are playing ___ the park.", options:["in","at","on"], correct:"in", rule:"In — парк воспринимается как закрытое пространство с границами. At the park тоже возможно, но in подчёркивает что дети внутри парка, а не просто у входа." },
+  { topic:"Место", sentence:"I saw her ___ the bus stop.", options:["at","on","in"], correct:"at", rule:"At — остановка это точка на маршруте. On the bus stop — не используется. In — только для закрытых пространств." },
+  { topic:"Место", sentence:"He sat ___ the front row.", options:["in","on","at"], correct:"in", rule:"In the row — ряд воспринимается как пространство, в котором ты сидишь. On the row звучало бы как 'на ряду' — поверхность. At the row не описывает конкретное место." },
+  { topic:"Место", sentence:"The town is ___ the river.", options:["on","at","in"], correct:"on", rule:"On — город расположен вдоль реки, как на линии. In the river означало бы что город в воде. At the river — просто рядом с рекой, а не 'на реке'." },
+
+  // ВРЕМЯ — in/on/at
+  { topic:"Время", sentence:"I wake up ___ 7 a.m.", options:["at","in","on"], correct:"at", rule:"At — для точного времени: конкретная секунда на шкале времени. In используется для периодов (in the morning). On — для дат и дней." },
+  { topic:"Время", sentence:"She was born ___ 1995.", options:["in","at","on"], correct:"in", rule:"In — для годов, месяцев и сезонов: это периоды, а не точки. At 1995 — так не говорят. On используется для конкретных дат (on March 5th)." },
+  { topic:"Время", sentence:"We have a meeting ___ Monday.", options:["on","in","at"], correct:"on", rule:"On — для дней недели и конкретных дат. In Monday — не используется. At Monday — так не говорят. Запомни: on = конкретный день." },
+  { topic:"Время", sentence:"It gets cold ___ winter.", options:["in","on","at"], correct:"in", rule:"In — для сезонов, месяцев и лет: это протяжённые периоды. On winter — не используется. At winter — только для точных моментов, но не для сезонов." },
+  { topic:"Время", sentence:"He called me ___ midnight.", options:["at","on","in"], correct:"at", rule:"At — для особых точек суток: midnight, noon, dawn, dusk. In midnight — не используется. On midnight — так не говорят." },
+  { topic:"Время", sentence:"The concert is ___ Friday evening.", options:["on","at","in"], correct:"on", rule:"On — когда называешь день, даже с добавлением части суток. At Friday evening — не используется. In используется только для частей суток без дня (in the evening)." },
+  { topic:"Время", sentence:"I'll see you ___ the morning.", options:["in","on","at"], correct:"in", rule:"In — для частей суток (morning, afternoon, evening). On the morning — используется только с конкретным днём (on Monday morning). At the morning — не используется." },
+  { topic:"Время", sentence:"She left ___ Christmas.", options:["at","on","in"], correct:"at", rule:"At — для праздников без слова Day: at Christmas, at Easter, at New Year. On Christmas Day — с полным названием. In Christmas — не используется." },
+  { topic:"Время", sentence:"He died ___ the age of 90.", options:["at","in","on"], correct:"at", rule:"At the age of — устойчивое выражение. Возраст — это точка на шкале жизни, поэтому at. In the age — не используется в этом значении." },
+  { topic:"Время", sentence:"I'll finish ___ the end of the week.", options:["at","in","on"], correct:"at", rule:"At the end / at the beginning — устойчивые выражения. In the end значит 'в конце концов' (итог), а не 'к концу недели'. On the end — не используется." },
+
+  // ВРЕМЯ — for/since/during
+  { topic:"Время", sentence:"I've lived here ___ 2010.", options:["since","for","during"], correct:"since", rule:"Since — с конкретного момента в прошлом до сейчас. For — для продолжительности без точки отсчёта (for 10 years). During — внутри события, а не с даты." },
+  { topic:"Время", sentence:"She studied ___ three hours.", options:["for","since","during"], correct:"for", rule:"For — отвечает на вопрос 'сколько времени?': три часа — это продолжительность. Since требует точку начала (since 3 PM). During нужно событие, а не число." },
+  { topic:"Время", sentence:"He fell asleep ___ the movie.", options:["during","for","since"], correct:"during", rule:"During — внутри события или периода (the movie, the meeting, the war). For the movie — не используется в этом значении. Since требует точку начала, а не событие." },
+  { topic:"Время", sentence:"We haven't spoken ___ years.", options:["for","since","during"], correct:"for", rule:"For — продолжительность: 'несколько лет' — это отрезок без конкретной точки начала. Since years — нельзя, нужна точка: since 2020. During years — не используется." },
+  { topic:"Время", sentence:"I met her ___ the conference.", options:["during","for","since"], correct:"during", rule:"During — внутри конкретного события. For the conference — не используется в значении 'в ходе'. Since the conference — означало бы 'с тех пор как прошла конференция'." },
+  { topic:"Время", sentence:"She's been waiting ___ noon.", options:["since","for","during"], correct:"since", rule:"Since noon — с конкретного времени суток до сейчас. For noon — нельзя, нужно число (for 3 hours). During noon — не используется, noon это момент, а не событие." },
+
+  // НАПРАВЛЕНИЕ — to/into/onto/from
+  { topic:"Направление", sentence:"She walked ___ the room.", options:["into","to","onto"], correct:"into", rule:"Into — движение внутрь закрытого пространства: ты пересекаешь границу и оказываешься внутри. To the room — просто направление, без входа. Onto — движение на поверхность, а не внутрь." },
+  { topic:"Направление", sentence:"He jumped ___ the stage.", options:["onto","into","to"], correct:"onto", rule:"Onto — движение на поверхность сверху. Into the stage — звучит как 'внутрь сцены'. To the stage — просто направление, но не факт что ты на неё запрыгнул." },
+  { topic:"Направление", sentence:"I'm going ___ the supermarket.", options:["to","into","onto"], correct:"to", rule:"To — направление к месту назначения. Into подразумевает момент входа внутрь, а не весь путь. Onto — для поверхностей, не для зданий." },
+  { topic:"Направление", sentence:"She came ___ Italy last year.", options:["from","to","into"], correct:"from", rule:"From — исходная точка, откуда пришло действие. To Italy — куда, а не откуда. Into Italy — въезд внутрь страны, но не источник происхождения." },
+  { topic:"Направление", sentence:"The cat jumped ___ the sofa.", options:["onto","into","to"], correct:"onto", rule:"Onto — прыжок на поверхность (диван — это поверхность). Into the sofa — внутрь дивана, что физически невозможно. To the sofa — просто направление, без приземления." },
+  { topic:"Направление", sentence:"He drove ___ the garage.", options:["into","onto","to"], correct:"into", rule:"Into — машина въезжает внутрь гаража, пересекая вход. Onto the garage — на крышу гаража. To the garage — просто доехал до, не обязательно въехал." },
+  { topic:"Направление", sentence:"She moved ___ a new apartment.", options:["into","to","onto"], correct:"into", rule:"Into — ты физически переезжаешь внутрь нового жилья. To a new apartment — просто направление, без идеи 'стать жильцом'. Onto — для поверхностей, а не жилья." },
+  { topic:"Направление", sentence:"We flew ___ Paris to London.", options:["from","to","into"], correct:"from", rule:"From ... to — стандартная пара для маршрута: откуда и куда. Into Paris — въезд внутрь города, не исходная точка. To Paris здесь было бы ответом на другой вопрос (куда)." },
+
+  // УСТОЙЧИВЫЕ СОЧЕТАНИЯ
+  { topic:"Устойчивые", sentence:"She is very good ___ math.", options:["at","in","on"], correct:"at", rule:"Good at — фиксированное сочетание для навыков и умений. Good in — не стандартно. Good on — используется в других значениях (good on you = молодец), но не для навыков." },
+  { topic:"Устойчивые", sentence:"It depends ___ the weather.", options:["on","of","from"], correct:"on", rule:"Depend on — фиксированное сочетание: зависеть от чего-то. Depend of — грамматически неверно. Depend from — так не говорят в английском, хотя логика русского 'зависеть от' подсказывает from." },
+  { topic:"Устойчивые", sentence:"He is interested ___ history.", options:["in","of","at"], correct:"in", rule:"Interested in — фиксированное сочетание. Interested of/at — не существуют. Запомни: интерес направлен внутрь темы, поэтому in — ты как бы погружаешься в предмет." },
+  { topic:"Устойчивые", sentence:"She apologized ___ being late.", options:["for","of","about"], correct:"for", rule:"Apologize for — извиниться за конкретное действие. Apologize about — говорит о теме разговора, а не о причине извинения. Apologize of — не существует." },
+  { topic:"Устойчивые", sentence:"I'm tired ___ waiting.", options:["of","from","with"], correct:"of", rule:"Tired of — устать от чего-то морально, надоело. Tired from — устать физически после чего-то (tired from running). Tired with — не стандартно в этом значении." },
+  { topic:"Устойчивые", sentence:"He's afraid ___ spiders.", options:["of","from","about"], correct:"of", rule:"Afraid of — фиксированное сочетание. Afraid from — кажется логичным ('от пауков'), но в английском не используется. Afraid about — для беспокойства о ситуации, не для страха перед существом." },
+  { topic:"Устойчивые", sentence:"She dreamed ___ travelling the world.", options:["of","about","for"], correct:"of", rule:"Dream of — мечтать о чём-то как о цели. Dream about тоже возможно, но чаще используется для снов ('мне приснилось'). Dream for — не используется." },
+  { topic:"Устойчивые", sentence:"They argued ___ money.", options:["about","of","on"], correct:"about", rule:"Argue about — спорить на тему чего-то. Argue on — иногда используется (argue on a point), но argue about money — стандартный вариант. Argue of — не существует." },
+  { topic:"Устойчивые", sentence:"He succeeded ___ passing the exam.", options:["in","at","on"], correct:"in", rule:"Succeed in doing something — фиксированное сочетание. Succeed at — используется без глагола (succeed at math). Succeed on — не стандартно." },
+  { topic:"Устойчивые", sentence:"I'm looking forward ___ seeing you.", options:["to","for","at"], correct:"to", rule:"Look forward to — фиксированное сочетание, after to всегда герундий (-ing). Ловушка: кажется что нужен инфинитив (for seeing), но нет — to здесь предлог, а не частица." },
+  { topic:"Устойчивые", sentence:"She complained ___ the noise.", options:["about","of","on"], correct:"about", rule:"Complain about — жаловаться на конкретную проблему. Complain of — используется в медицинском контексте (complain of pain). Complain on — не существует." },
+  { topic:"Устойчивые", sentence:"He insisted ___ paying the bill.", options:["on","in","at"], correct:"on", rule:"Insist on doing something — фиксированное сочетание. Insist in — не существует. Insist at — не используется. On здесь указывает на конкретное действие, на котором настаивают." },
+  { topic:"Устойчивые", sentence:"She belongs ___ a book club.", options:["to","in","at"], correct:"to", rule:"Belong to — принадлежать к группе или человеку. Belong in — иногда используется (this belongs in the kitchen), но для членства в клубе — только to. Belong at — не стандартно." },
+  { topic:"Устойчивые", sentence:"I'm not familiar ___ this author.", options:["with","of","about"], correct:"with", rule:"Familiar with — знаком с чем-то/кем-то. Familiar of/about — не используются. With подчёркивает близкое знакомство, контакт с темой." },
+  { topic:"Устойчивые", sentence:"He's responsible ___ the project.", options:["for","of","to"], correct:"for", rule:"Responsible for — ответственный за что-то. Responsible of — не существует. Responsible to someone — значит 'подотчётен кому-то', а не 'отвечает за проект'." },
+];
+
+let shuffled = [];
+let idx = 0;
+let score = 0;
+let streak = 0;
+let answered = false;
+let timerInterval = null;
+let secondsLeft = 600;
+let timerStarted = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startTimer() {
+  if (timerStarted) return;
+  timerStarted = true;
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const el = document.getElementById('timer-display');
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (secondsLeft <= 60) el.classList.add('urgent');
+    if (secondsLeft <= 0) { clearInterval(timerInterval); showResult(); }
+  }, 1000);
+}
+
+function showResult() {
+  const emoji = score >= 30 ? '🏆' : '💪';
+  const title = score >= 30 ? 'Отлично! Предлоги покорены!' : 'Хорошая работа, продолжай!';
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-score').textContent = `Счёт: ${score}`;
+  document.getElementById('result-modal').classList.add('open');
+}
+
+function restartGame() {
+  document.getElementById('result-modal').classList.remove('open');
+  score = 0; secondsLeft = 600; timerStarted = false; idx = 0;
+  document.getElementById('score-display').textContent = '0';
+  document.getElementById('timer-display').textContent = '10:00';
+  document.getElementById('timer-display').classList.remove('urgent');
+  shuffled = shuffle(questions);
+  loadQuestion();
+}
+
+function loadQuestion() {
+  if (idx >= shuffled.length) { shuffled = shuffle(questions); idx = 0; }
+  const q = shuffled[idx];
+  answered = false;
+
+  // sentence
+  const el = document.getElementById('sentence-text');
+  el.classList.add('animating');
+  setTimeout(() => {
+    el.innerHTML = q.sentence.replace('___', '<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+    el.classList.remove('animating');
+  }, 120);
+
+  document.getElementById('topic-tag').textContent = q.topic;
+
+  // shuffle options display order
+  const displayOrder = shuffle([0,1,2]);
+  for (let i = 0; i < 3; i++) {
+    const btn = document.getElementById(`opt-${i}`);
+    btn.textContent = q.options[displayOrder[i]];
+    btn.dataset.value = q.options[displayOrder[i]];
+    btn.className = 'option-btn';
+    btn.disabled = false;
+  }
+
+  // hide rule and next
+  document.getElementById('rule-box').className = 'rule-box';
+  document.getElementById('rule-box').textContent = '';
+  document.getElementById('next-btn').className = 'next-btn';
+}
+
+function choose(i) {
+  if (answered) return;
+  answered = true;
+  startTimer();
+
+  const q = shuffled[idx];
+  const chosen = document.getElementById(`opt-${i}`).dataset.value;
+  const correct = q.correct;
+
+  // disable all buttons
+  for (let j = 0; j < 3; j++) {
+    const btn = document.getElementById(`opt-${j}`);
+    btn.disabled = true;
+    if (btn.dataset.value === correct) btn.classList.add('correct');
+    else if (j === i) btn.classList.add('wrong');
+  }
+
+  // show rule
+  const rule = document.getElementById('rule-box');
+
+  if (chosen === correct) {
+    score++;
+    document.getElementById('score-display').textContent = score;
+    rule.textContent = `✓ ${q.rule}`;
+  } else {
+    rule.textContent = `«${correct}» — ${q.rule}`;
+  }
+
+  rule.classList.add('visible');
+
+  // show next
+  document.getElementById('next-btn').classList.add('visible');
+}
+
+function nextQuestion() {
+  idx++;
+  loadQuestion();
+}
+
+function openInfo() { document.getElementById('info-modal').classList.add('open'); }
+function closeInfo() { document.getElementById('info-modal').classList.remove('open'); }
+function closeInfoOutside(e) { if (e.target === document.getElementById('info-modal')) closeInfo(); }
+
+// init
+shuffled = shuffle(questions);
+loadQuestion();
+</script>
+</body>
+</html>

@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Аудирование — Verb Trainer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+    gap: 1.25rem;
+  }
+
+  header { text-align: center; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+  }
+
+  .counter {
+    font-size: 14px;
+    color: var(--blue-label);
+  }
+
+  /* Video */
+  video {
+    width: 100%;
+    max-width: 480px;
+    border-radius: var(--radius-card);
+    background: #000;
+    display: block;
+  }
+
+  /* Answer area */
+  .answer-block {
+    width: 100%;
+    max-width: 480px;
+    min-height: 52px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .answer-block.visible { opacity: 1; }
+
+  .answer-en {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    line-height: 1.4;
+  }
+
+  .answer-ru {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--blue-label);
+    line-height: 1.4;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 480px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    flex: 1;
+    border-radius: var(--radius-btn);
+    padding: 13px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn-replay {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .btn-replay:hover { background: var(--blue-light); }
+
+  .btn-answer {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .btn-answer:hover { background: var(--blue-light); }
+
+  .btn-next {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+  }
+  .btn-next:hover { background: var(--blue-hover); }
+  .btn-next:disabled { opacity: 0.4; cursor: default; }
+  .toggle-label { display: flex; align-items: center; cursor: pointer; }
+  .toggle-label input { display: none; }
+  .toggle-track {
+    width: 32px; height: 18px;
+    background: var(--blue-border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+  }
+  .toggle-label input:checked + .toggle-track { background: var(--blue-dark); }
+  .toggle-label input:checked + .toggle-track::after { left: 17px; }
+  .action-btn:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='friends-s01e01.html'">←</button>
+    <h1>Аудирование</h1>
+    <label class="toggle-label" title="Показывать перевод">
+      <input type="checkbox" id="ru-toggle" checked />
+      <span class="toggle-track"></span>
+    </label>
+  </div>
+</header>
+
+<div class="counter" id="counter" style="opacity:0;">1 / 353</div>
+
+<video id="video" src="https://res.cloudinary.com/ufbidw3j/video/upload/s01e01p01_nmg8q6.mp4" preload="auto"></video>
+
+<div class="answer-block" id="answer-block">
+  <div class="answer-en" id="answer-display"></div>
+  <div class="answer-ru" id="translation-display"></div>
+  <div id="loading-msg" style="display:none;font-size:14px;color:var(--blue-label);font-style:italic;">Подождите, видео загружается...</div>
+</div>
+
+<div id="controls" style="display:none;" class="btn-row">
+  <button class="action-btn btn-replay" onclick="replay()">↺ Повторить</button>
+  <button class="action-btn btn-answer" onclick="showAnswer()">Текст</button>
+  <button class="action-btn btn-next" id="next-btn" onclick="next()">Следующее →</button>
+</div>
+
+<div id="start-row" class="btn-row" style="justify-content:center;opacity:0;pointer-events:none;">
+  <button class="action-btn btn-next" style="max-width:200px;" onclick="startListening()">Начать</button>
+</div>
+
+<script>
+const phrases = [
+  {
+    "start": 50.0,
+    "end": 52.8,
+    "text": "There's nothing to tell. It's just some guy I work with.",
+    "translation_ru": "Да рассказывать нечего. Просто парень, с которым я работаю."
+  },
+  {
+    "start": 53.0,
+    "end": 55.1,
+    "text": "Come on. You're going out with a guy.",
+    "translation_ru": "Да ладно. Ты встречаешься с парнем."
+  },
+  {
+    "start": 55.3,
+    "end": 57.8,
+    "text": "There's gotta be something wrong with him.",
+    "translation_ru": "Значит, с ним что-то не так."
+  },
+  {
+    "start": 58.1,
+    "end": 59.9,
+    "text": "So does he have a hump and a hair piece?",
+    "translation_ru": "У него горб и парик, что ли?"
+  },
+  {
+    "start": 62.4,
+    "end": 63.8,
+    "text": "Wait. Does he eat chalk?",
+    "translation_ru": "Погоди. Он мел ест?"
+  },
+  {
+    "start": 65.0,
+    "end": 68.2,
+    "text": "I don't want her to go through what I went through with Carl. Oh.",
+    "translation_ru": "Не хочу, чтобы она прошла через то же, что я с Карлом. Ох."
+  },
+  {
+    "start": 68.4,
+    "end": 71.2,
+    "text": "Okay, everybody relax. This is not even a date.",
+    "translation_ru": "Так, все успокоились. Это даже не свидание."
+  },
+  {
+    "start": 71.4,
+    "end": 74.4,
+    "text": "It's just two people going out to dinner and not having sex.",
+    "translation_ru": "Просто два человека идут ужинать и не занимаются сексом."
+  },
+  {
+    "start": 74.6,
+    "end": 76.2,
+    "text": "Sounds like a date to me.",
+    "translation_ru": "По-моему, это и есть свидание."
+  },
+  {
+    "start": 79.0,
+    "end": 81.9,
+    "text": "I'm back in high school, in the middle of the cafeteria...",
+    "translation_ru": "Я снова в школе, посреди столовой..."
+  },
+  {
+    "start": 82.1,
+    "end": 85.4,
+    "text": "...and I realize I'm totally naked.",
+    "translation_ru": "...и понимаю, что я совершенно голая."
+  },
+  {
+    "start": 85.6,
+    "end": 87.2,
+    "text": "Oh, yeah. - I've had that dream.",
+    "translation_ru": "О да. - Мне снился такой же сон."
+  },
+  {
+    "start": 87.4,
+    "end": 91.5,
+    "text": "Then I look down and I realize there is a phone...",
+    "translation_ru": "Потом я смотрю вниз и понимаю, что там телефон..."
+  },
+  {
+    "start": 92.0,
+    "end": 94.0,
+    "text": "...there.",
+    "translation_ru": "...вон там."
+  },
+  {
+    "start": 94.9,
+    "end": 96.8,
+    "text": "Instead of... - That's right!",
+    "translation_ru": "Вместо... - Точно!"
+  },
+  {
+    "start": 97.1,
+    "end": 98.6,
+    "text": "MONICA: That one, I've never had. PHOEBE: No.",
+    "translation_ru": "МОНИКА: Такой сон мне никогда не снился. ФИБИ: Да ну."
+  },
+  {
+    "start": 98.7,
+    "end": 102.9,
+    "text": "All of a sudden, the phone starts to ring.",
+    "translation_ru": "И вдруг телефон начинает звонить."
+  },
+  {
+    "start": 103.1,
+    "end": 104.8,
+    "text": "And it turns out it's my mother.",
+    "translation_ru": "И оказывается, это моя мать."
+  },
+  {
+    "start": 106.6,
+    "end": 110.9,
+    "text": "Which is very, very weird because she never calls me.",
+    "translation_ru": "Что очень, очень странно, ведь она мне никогда не звонит."
+  },
+  {
+    "start": 115.9,
+    "end": 117.8,
+    "text": "Hi.",
+    "translation_ru": "Привет."
+  },
+  {
+    "start": 118.8,
+    "end": 122.0,
+    "text": "This guy says \"hello,\" I wanna kill myself.",
+    "translation_ru": "Этот парень говорит \"привет\", а мне хочется покончить с собой."
+  },
+  {
+    "start": 122.2,
+    "end": 123.4,
+    "text": "Are you okay, sweetie?",
+    "translation_ru": "Ты в порядке, милая?"
+  },
+  {
+    "start": 123.7,
+    "end": 128.3,
+    "text": "I feel like someone grabbed my small intestine, pulled it out of my mouth...",
+    "translation_ru": "У меня ощущение, будто кто-то схватил мою тонкую кишку, вытащил её через рот..."
+  },
+  {
+    "start": 128.5,
+    "end": 131.4,
+    "text": "...and tied it around my neck. - Cookie?",
+    "translation_ru": "...и обвязал вокруг моей шеи. - Печенье?"
+  },
+  {
+    "start": 133.4,
+    "end": 134.9,
+    "text": "Carol moved her stuff out today.",
+    "translation_ru": "Кэрол сегодня вывезла свои вещи."
+  },
+  {
+    "start": 135.1,
+    "end": 136.1,
+    "text": "PHOEBE & JOEY: Oh.",
+    "translation_ru": "ФИБИ и ДЖОУИ: Ох."
+  },
+  {
+    "start": 136.3,
+    "end": 138.1,
+    "text": "Let me get you some coffee. - Thanks.",
+    "translation_ru": "Давай налью тебе кофе. - Спасибо."
+  },
+  {
+    "start": 141.1,
+    "end": 142.8,
+    "text": "Ew. Unh.",
+    "translation_ru": "Фу. Мм."
+  },
+  {
+    "start": 143.0,
+    "end": 146.9,
+    "text": "No. No, don't! Stop cleansing my aura.",
+    "translation_ru": "Нет. Нет, не надо! Хватит очищать мою ауру."
+  },
+  {
+    "start": 147.2,
+    "end": 149.8,
+    "text": "Just leave my aura alone, okay?",
+    "translation_ru": "Просто оставь мою ауру в покое, ладно?"
+  },
+  {
+    "start": 151.8,
+    "end": 154.7,
+    "text": "I'll be fine. All right? Really. I hope she'll be very happy.",
+    "translation_ru": "Я в порядке. Правда. Надеюсь, она будет очень счастлива."
+  },
+  {
+    "start": 154.8,
+    "end": 156.2,
+    "text": "No, you don't. - No, I don't.",
+    "translation_ru": "Нет, не надеешься. - Да, не надеюсь."
+  },
+  {
+    "start": 156.3,
+    "end": 158.2,
+    "text": "To hell with her. She left me!",
+    "translation_ru": "К чёрту её. Она бросила меня!"
+  },
+  {
+    "start": 159.2,
+    "end": 161.2,
+    "text": "And you never knew she was a lesbian.",
+    "translation_ru": "И ты даже не знал, что она лесбиянка."
+  },
+  {
+    "start": 165.2,
+    "end": 167.4,
+    "text": "No! Okay?",
+    "translation_ru": "Нет! Ясно?"
+  },
+  {
+    "start": 167.5,
+    "end": 170.3,
+    "text": "Why does everyone keep fixating on that?",
+    "translation_ru": "Почему все зациклились на этом?"
+  },
+  {
+    "start": 172.0,
+    "end": 174.8,
+    "text": "She didn't know. How should I know?",
+    "translation_ru": "Она сама не знала. Откуда мне было знать?"
+  },
+  {
+    "start": 176.6,
+    "end": 179.3,
+    "text": "Sometimes I wish I was a lesbian.",
+    "translation_ru": "Иногда я жалею, что я не лесбиянка."
+  },
+  {
+    "start": 180.9,
+    "end": 182.9,
+    "text": "Did I say that out loud?",
+    "translation_ru": "Я это вслух сказала?"
+  },
+  {
+    "start": 184.8,
+    "end": 188.9,
+    "text": "All right, Ross. Look, you're feeling a lot of pain right now.",
+    "translation_ru": "Так, Росс. Слушай, тебе сейчас очень больно."
+  },
+  {
+    "start": 189.1,
+    "end": 191.5,
+    "text": "You're angry. You're hurting.",
+    "translation_ru": "Ты злишься. Тебе плохо."
+  },
+  {
+    "start": 191.7,
+    "end": 193.9,
+    "text": "Can I tell you what the answer is?",
+    "translation_ru": "Хочешь, скажу тебе, в чём выход?"
+  },
+  {
+    "start": 194.2,
+    "end": 195.4,
+    "text": "Strip joints!",
+    "translation_ru": "Стриптиз-клубы!"
+  },
+  {
+    "start": 197.6,
+    "end": 199.9,
+    "text": "Come on, you're single. Have some hormones.",
+    "translation_ru": "Да ладно, ты холост. Дай волю гормонам."
+  },
+  {
+    "start": 200.2,
+    "end": 202.5,
+    "text": "See, but I don't want to be single, okay?",
+    "translation_ru": "Видишь ли, я не хочу быть холостым, понятно?"
+  },
+  {
+    "start": 202.7,
+    "end": 205.8,
+    "text": "I just wanna be married again.",
+    "translation_ru": "Я просто хочу снова быть женатым."
+  },
+  {
+    "start": 210.0,
+    "end": 213.1,
+    "text": "And I just want a million dollars!",
+    "translation_ru": "А я просто хочу миллион долларов!"
+  },
+  {
+    "start": 214.2,
+    "end": 215.3,
+    "text": "Rachel?",
+    "translation_ru": "Рейчел?"
+  },
+  {
+    "start": 215.5,
+    "end": 218.2,
+    "text": "Oh, God, Monica! Hi! Thank God!",
+    "translation_ru": "О боже, Моника! Привет! Слава богу!"
+  },
+  {
+    "start": 218.3,
+    "end": 221.5,
+    "text": "I went to your building and this guy with a hammer said...",
+    "translation_ru": "Я пришла к твоему дому, и какой-то парень с молотком сказал..."
+  },
+  {
+    "start": 221.7,
+    "end": 223.9,
+    "text": "...that you might be here, and you are.",
+    "translation_ru": "...что ты, возможно, здесь, и вот ты здесь."
+  },
+  {
+    "start": 224.1,
+    "end": 227.6,
+    "text": "Can I get you some coffee? - Decaf.",
+    "translation_ru": "Кофе хочешь? - Без кофеина."
+  },
+  {
+    "start": 228.2,
+    "end": 232.2,
+    "text": "Okay, everybody, this is Rachel, another Lincoln High survivor.",
+    "translation_ru": "Так, все, это Рейчел, ещё одна выжившая из школы Линкольна."
+  },
+  {
+    "start": 232.4,
+    "end": 234.9,
+    "text": "This is everybody. This is Chandler and Phoebe...",
+    "translation_ru": "Это все наши. Это Чендлер и Фиби..."
+  },
+  {
+    "start": 235.1,
+    "end": 237.4,
+    "text": "...and Joey. And remember my brother, Ross?",
+    "translation_ru": "...и Джоуи. А моего брата Росса помнишь?"
+  },
+  {
+    "start": 237.5,
+    "end": 238.7,
+    "text": "Sure! - Hey.",
+    "translation_ru": "Конечно! - Привет."
+  },
+  {
+    "start": 238.8,
+    "end": 240.7,
+    "text": "Hi. - Oh, God.",
+    "translation_ru": "Привет. - О боже."
+  },
+  {
+    "start": 248.5,
+    "end": 252.1,
+    "text": "So you wanna tell us now, or are we waiting for four wet bridesmaids?",
+    "translation_ru": "Так ты расскажешь нам сейчас, или ждём ещё четырёх мокрых подружек невесты?"
+  },
+  {
+    "start": 254.4,
+    "end": 259.3,
+    "text": "Oh, God! Well, it started about a half-hour before the wedding.",
+    "translation_ru": "О боже! В общем, всё началось за полчаса до свадьбы."
+  },
+  {
+    "start": 259.5,
+    "end": 261.9,
+    "text": "I was in this room with all the presents...",
+    "translation_ru": "Я была в комнате с подарками..."
+  },
+  {
+    "start": 262.1,
+    "end": 263.9,
+    "text": "...and I was looking at this gravy boat.",
+    "translation_ru": "...и разглядывала соусник."
+  },
+  {
+    "start": 264.1,
+    "end": 267.6,
+    "text": "This really gorgeous Limoges gravy boat.",
+    "translation_ru": "Правда роскошный соусник из Лиможа."
+  },
+  {
+    "start": 267.7,
+    "end": 269.6,
+    "text": "When all of a sudden... Sweet 'N Low?",
+    "translation_ru": "И вдруг... Сахарозаменитель?"
+  },
+  {
+    "start": 269.7,
+    "end": 271.9,
+    "text": "I realized...",
+    "translation_ru": "Я поняла..."
+  },
+  {
+    "start": 272.0,
+    "end": 275.9,
+    "text": "...I was more turned on by this gravy boat than by Barry.",
+    "translation_ru": "...что этот соусник возбуждал меня больше, чем Барри."
+  },
+  {
+    "start": 276.1,
+    "end": 279.2,
+    "text": "Then I got really freaked out, and that's when it hit me:",
+    "translation_ru": "Тут меня накрыло, и до меня дошло:"
+  },
+  {
+    "start": 279.3,
+    "end": 282.1,
+    "text": "How much Barry looks like Mr. Potato Head.",
+    "translation_ru": "Насколько Барри похож на мистера Картофельная Голова."
+  },
+  {
+    "start": 282.5,
+    "end": 285.8,
+    "text": "You know, I mean, I always knew he looked familiar, but...",
+    "translation_ru": "Ну, то есть, я всегда знала, что он на кого-то похож, но..."
+  },
+  {
+    "start": 288.0,
+    "end": 291.3,
+    "text": "Anyway, I just had to get out of there, and I started wondering:",
+    "translation_ru": "В общем, мне нужно было оттуда выбраться, и я начала думать:"
+  },
+  {
+    "start": 291.5,
+    "end": 295.1,
+    "text": "\"Why am I doing this?\" And \"Who am I doing this for?\"",
+    "translation_ru": "\"Зачем я это делаю?\" И \"Ради кого я это делаю?\""
+  },
+  {
+    "start": 295.3,
+    "end": 299.7,
+    "text": "Anyway, I just didn't know where to go, and I know you and I have drifted apart...",
+    "translation_ru": "В общем, я не знала, куда пойти, и понимаю, что мы с тобой отдалились друг от друга..."
+  },
+  {
+    "start": 299.9,
+    "end": 302.7,
+    "text": "...but you're the only person I know in the city.",
+    "translation_ru": "...но ты единственная, кого я знаю в этом городе."
+  },
+  {
+    "start": 302.9,
+    "end": 304.6,
+    "text": "Who wasn't invited to the wedding.",
+    "translation_ru": "Единственная, кого не пригласили на свадьбу."
+  },
+  {
+    "start": 305.0,
+    "end": 307.9,
+    "text": "Oh, I was kind of hoping that wouldn't be an issue.",
+    "translation_ru": "Ох, я вообще-то надеялась, что это не станет проблемой."
+  },
+  {
+    "start": 322.1,
+    "end": 324.6,
+    "text": "I'm guessing he bought her the big pipe organ...",
+    "translation_ru": "Похоже, он купил ей большой трубный орган..."
+  },
+  {
+    "start": 324.7,
+    "end": 327.2,
+    "text": "...and she's really not happy about it.",
+    "translation_ru": "...и она этому совсем не рада."
+  },
+  {
+    "start": 328.5,
+    "end": 331.5,
+    "text": "Daddy, I just... I can't marry him.",
+    "translation_ru": "Папа, я просто... я не могу выйти за него замуж."
+  },
+  {
+    "start": 331.7,
+    "end": 333.3,
+    "text": "I'm sorry.",
+    "translation_ru": "Прости."
+  },
+  {
+    "start": 333.5,
+    "end": 336.4,
+    "text": "I just don't love him.",
+    "translation_ru": "Я просто не люблю его."
+  },
+  {
+    "start": 336.8,
+    "end": 339.5,
+    "text": "Well, it matters to me.",
+    "translation_ru": "Ну, для меня это важно."
+  },
+  {
+    "start": 342.0,
+    "end": 344.4,
+    "text": "CHANDLER: She should not be wearing those pants.",
+    "translation_ru": "ЧЕНДЛЕР: Ей не стоит носить эти брюки."
+  },
+  {
+    "start": 345.6,
+    "end": 347.6,
+    "text": "I say push her down the stairs.",
+    "translation_ru": "Я предлагаю столкнуть её с лестницы."
+  },
+  {
+    "start": 347.8,
+    "end": 351.0,
+    "text": "ALL: Push her down the stairs! Push her down the stairs!",
+    "translation_ru": "ВСЕ: Столкни её с лестницы! Столкни её с лестницы!"
+  },
+  {
+    "start": 355.2,
+    "end": 357.2,
+    "text": "Come on, Daddy, listen to me!",
+    "translation_ru": "Ну же, папа, послушай меня!"
+  },
+  {
+    "start": 357.4,
+    "end": 362.0,
+    "text": "It's like all of my life, everyone's always told me, \"You're a shoe!",
+    "translation_ru": "Всю мою жизнь мне все говорили: \"Ты туфля!"
+  },
+  {
+    "start": 362.2,
+    "end": 364.2,
+    "text": "You're a shoe! You're a shoe! You're a shoe!\"",
+    "translation_ru": "Ты туфля! Ты туфля! Ты туфля!\""
+  },
+  {
+    "start": 364.4,
+    "end": 367.6,
+    "text": "Then today I stopped and said, \"What if I don't wanna be a shoe?",
+    "translation_ru": "А сегодня я вдруг остановилась и подумала: \"А если я не хочу быть туфлей?"
+  },
+  {
+    "start": 367.8,
+    "end": 371.0,
+    "text": "What if I wanna be a purse? You know?",
+    "translation_ru": "Что если я хочу быть сумочкой? Понимаешь?"
+  },
+  {
+    "start": 371.2,
+    "end": 373.0,
+    "text": "Or a hat?\"",
+    "translation_ru": "Или шляпкой?\""
+  },
+  {
+    "start": 373.9,
+    "end": 376.4,
+    "text": "I don't want you to buy me a hat, I am a hat.",
+    "translation_ru": "Я не хочу, чтобы ты покупал мне шляпку, я и есть шляпка."
+  },
+  {
+    "start": 376.6,
+    "end": 378.8,
+    "text": "It's a metaphor, Daddy!",
+    "translation_ru": "Это метафора, папа!"
+  },
+  {
+    "start": 380.5,
+    "end": 382.4,
+    "text": "You can see where he'd have trouble.",
+    "translation_ru": "Понятно, почему ему сложно это понять."
+  },
+  {
+    "start": 385.6,
+    "end": 387.5,
+    "text": "Look, Daddy, it's my life.",
+    "translation_ru": "Слушай, папа, это моя жизнь."
+  },
+  {
+    "start": 388.8,
+    "end": 391.3,
+    "text": "Well, maybe I'll just stay here with Monica.",
+    "translation_ru": "Ну что ж, может, я просто останусь здесь, у Моники."
+  },
+  {
+    "start": 394.3,
+    "end": 396.8,
+    "text": "I guess we've established she's staying with Monica.",
+    "translation_ru": "Похоже, решено — она остаётся у Моники."
+  },
+  {
+    "start": 398.9,
+    "end": 401.7,
+    "text": "Well, maybe that's my decision.",
+    "translation_ru": "Ну, может, это моё решение."
+  },
+  {
+    "start": 402.3,
+    "end": 404.5,
+    "text": "Well, maybe I don't need your money.",
+    "translation_ru": "Может, мне не нужны твои деньги."
+  },
+  {
+    "start": 404.7,
+    "end": 406.9,
+    "text": "Wait! Wait! I said maybe!",
+    "translation_ru": "Стой! Стой! Я сказала \"может\"!"
+  },
+  {
+    "start": 413.9,
+    "end": 416.1,
+    "text": "Okay. Just breathe, that's it.",
+    "translation_ru": "Так. Просто дыши, вот так."
+  },
+  {
+    "start": 416.3,
+    "end": 418.8,
+    "text": "Just try to think of nice, calm things.",
+    "translation_ru": "Просто думай о чём-нибудь приятном и спокойном."
+  },
+  {
+    "start": 419.0,
+    "end": 422.9,
+    "text": "Raindrops on roses And whiskers on kittens",
+    "translation_ru": "Капли дождя на розах И усики котят"
+  },
+  {
+    "start": 423.3,
+    "end": 427.2,
+    "text": "Doorbells and sleigh bells And something with mittens",
+    "translation_ru": "Дверные звонки и бубенцы И что-то там про варежки"
+  },
+  {
+    "start": 428.0,
+    "end": 431.3,
+    "text": "La la la something With string",
+    "translation_ru": "Ла-ла-ла что-то там На верёвочке"
+  },
+  {
+    "start": 431.5,
+    "end": 433.4,
+    "text": "I'm all better now.",
+    "translation_ru": "Мне уже намного лучше."
+  },
+  {
+    "start": 435.2,
+    "end": 437.2,
+    "text": "I helped.",
+    "translation_ru": "Я помогла."
+  },
+  {
+    "start": 438.9,
+    "end": 441.2,
+    "text": "MONICA: Look, this is probably for the best, you know?",
+    "translation_ru": "МОНИКА: Слушай, возможно, это к лучшему, понимаешь?"
+  },
+  {
+    "start": 441.5,
+    "end": 444.1,
+    "text": "Independence. Taking control of your life.",
+    "translation_ru": "Независимость. Взять свою жизнь под контроль."
+  },
+  {
+    "start": 444.3,
+    "end": 448.6,
+    "text": "And, hey, if you need anything, you can always come to Joey.",
+    "translation_ru": "И, кстати, если тебе что-то понадобится, всегда можешь обратиться к Джоуи."
+  },
+  {
+    "start": 448.8,
+    "end": 452.2,
+    "text": "Me and Chandler live right across the hall. And he's away a lot.",
+    "translation_ru": "Мы с Чендлером живём прямо напротив. А его часто не бывает дома."
+  },
+  {
+    "start": 454.1,
+    "end": 456.6,
+    "text": "Joey, stop hitting on her. It's her wedding day.",
+    "translation_ru": "Джоуи, хватит к ней клеиться. У неё сегодня был день свадьбы."
+  },
+  {
+    "start": 456.8,
+    "end": 458.8,
+    "text": "What? Like there's a rule or something?",
+    "translation_ru": "Что? А что, есть какое-то правило на этот счёт?"
+  },
+  {
+    "start": 461.3,
+    "end": 464.9,
+    "text": "Please don't do that again. It's a horrible sound.",
+    "translation_ru": "Пожалуйста, больше так не делай. Ужасный звук."
+  },
+  {
+    "start": 465.0,
+    "end": 467.5,
+    "text": "PAUL: Uh, it's Paul. - Buzz him in.",
+    "translation_ru": "ПОЛ: Э-э, это Пол. - Впусти его."
+  },
+  {
+    "start": 467.8,
+    "end": 470.1,
+    "text": "Who's Paul? - Paul, the wine guy, Paul?",
+    "translation_ru": "Кто такой Пол? - Пол, тот винный парень, Пол?"
+  },
+  {
+    "start": 470.3,
+    "end": 471.3,
+    "text": "Maybe.",
+    "translation_ru": "Может быть."
+  },
+  {
+    "start": 471.5,
+    "end": 474.8,
+    "text": "Wait a minute. Your \"not a real date\" is with Paul, the wine guy?",
+    "translation_ru": "Погоди-ка. Твоё \"не настоящее свидание\" — с Полом, винным парнем?"
+  },
+  {
+    "start": 475.0,
+    "end": 476.8,
+    "text": "He finally asked you out? - Yes.",
+    "translation_ru": "Он наконец пригласил тебя? - Да."
+  },
+  {
+    "start": 477.0,
+    "end": 478.8,
+    "text": "Ooh. This is a \"Dear Diary\" moment.",
+    "translation_ru": "Ооо. Прямо просится в дневник."
+  },
+  {
+    "start": 480.3,
+    "end": 481.8,
+    "text": "Rach, wait, I can cancel.",
+    "translation_ru": "Рейч, погоди, я могу отменить."
+  },
+  {
+    "start": 482.1,
+    "end": 483.9,
+    "text": "Please, no. Go, I'll be fine.",
+    "translation_ru": "Нет, пожалуйста. Иди, я в порядке."
+  },
+  {
+    "start": 484.0,
+    "end": 487.7,
+    "text": "Ross, are you okay? I mean, do you want me to stay?",
+    "translation_ru": "Росс, ты как? В смысле, хочешь, чтобы я осталась?"
+  },
+  {
+    "start": 488.6,
+    "end": 490.7,
+    "text": "That'd be good.",
+    "translation_ru": "Было бы неплохо."
+  },
+  {
+    "start": 491.1,
+    "end": 494.9,
+    "text": "Really? - No, go on! It's Paul, the wine guy.",
+    "translation_ru": "Правда? - Нет, иди! Это же Пол, винный парень."
+  },
+  {
+    "start": 498.7,
+    "end": 501.1,
+    "text": "MONICA: Hi, come in. Paul, this is...",
+    "translation_ru": "МОНИКА: Привет, заходи. Пол, это..."
+  },
+  {
+    "start": 502.0,
+    "end": 504.5,
+    "text": "...everybody. Everybody, this is Paul.",
+    "translation_ru": "...все наши. Все, это Пол."
+  },
+  {
+    "start": 505.0,
+    "end": 506.0,
+    "text": "JOEY: Paul, the wine guy.",
+    "translation_ru": "ДЖОУИ: Пол, винный парень."
+  },
+  {
+    "start": 506.3,
+    "end": 510.1,
+    "text": "Wine guy. - I didn't catch your name. Paul, was it?",
+    "translation_ru": "Винный парень. - Я не расслышал, как тебя зовут. Пол, да?"
+  },
+  {
+    "start": 510.5,
+    "end": 513.1,
+    "text": "Okay. Sit down. Two seconds. - Okay.",
+    "translation_ru": "Так. Присаживайся. Секундочку. - Хорошо."
+  },
+  {
+    "start": 517.2,
+    "end": 520.3,
+    "text": "Ooh, I just pulled out four eyelashes. That can't be good.",
+    "translation_ru": "Ой, я только что выдернула четыре ресницы. Это плохой знак."
+  },
+  {
+    "start": 522.9,
+    "end": 524.7,
+    "text": "So, Rachel, what are you up to tonight?",
+    "translation_ru": "Итак, Рейчел, чем занимаешься сегодня вечером?"
+  },
+  {
+    "start": 525.3,
+    "end": 529.1,
+    "text": "Well, I was supposed to be headed for Aruba on my honeymoon...",
+    "translation_ru": "Ну, вообще-то я должна была лететь в Арубу в свадебное путешествие..."
+  },
+  {
+    "start": 529.3,
+    "end": 530.3,
+    "text": "...so, nothing.",
+    "translation_ru": "...так что ничем."
+  },
+  {
+    "start": 532.7,
+    "end": 535.0,
+    "text": "Right. You're not even getting your honeymoon.",
+    "translation_ru": "Точно. У тебя даже медового месяца не будет."
+  },
+  {
+    "start": 535.2,
+    "end": 539.2,
+    "text": "God. No, no. Although, Aruba. Heh. This time of year? Eh.",
+    "translation_ru": "Боже. Нет-нет. Хотя, Аруба. Хех. В это время года? Эх."
+  },
+  {
+    "start": 539.4,
+    "end": 542.0,
+    "text": "Talk about your...",
+    "translation_ru": "Там же одни..."
+  },
+  {
+    "start": 542.1,
+    "end": 543.2,
+    "text": "...big lizards.",
+    "translation_ru": "...большие ящерицы."
+  },
+  {
+    "start": 548.0,
+    "end": 550.7,
+    "text": "Anyway, if you don't feel like being alone tonight...",
+    "translation_ru": "В общем, если не хочешь сегодня оставаться одна..."
+  },
+  {
+    "start": 550.9,
+    "end": 553.7,
+    "text": "...Joey and Chandler are helping me with my furniture.",
+    "translation_ru": "...Джоуи и Чендлер помогают мне с мебелью."
+  },
+  {
+    "start": 553.9,
+    "end": 557.1,
+    "text": "Yes, and we're very excited about it.",
+    "translation_ru": "Да, и мы просто в восторге от этого."
+  },
+  {
+    "start": 557.2,
+    "end": 560.6,
+    "text": "Actually, thanks, but I'm just gonna hang out here tonight.",
+    "translation_ru": "Вообще-то спасибо, но я, пожалуй, просто побуду здесь сегодня."
+  },
+  {
+    "start": 560.7,
+    "end": 562.8,
+    "text": "It's been a long day. - Oh, sure. Okay. Sure.",
+    "translation_ru": "Это был длинный день. - Ну да, конечно. Ладно."
+  },
+  {
+    "start": 562.9,
+    "end": 564.3,
+    "text": "Hey, Pheebs, you wanna help?",
+    "translation_ru": "Эй, Фиби, хочешь помочь?"
+  },
+  {
+    "start": 564.7,
+    "end": 566.6,
+    "text": "Oh, I wish I could, but I don't want to.",
+    "translation_ru": "Ох, я бы рада, но не хочу."
+  },
+  {
+    "start": 574.9,
+    "end": 579.3,
+    "text": "I'm supposed to attach a bracket-y thing to the side things...",
+    "translation_ru": "Я вроде как должен прикрепить такую штуку-скобу к боковым штукам..."
+  },
+  {
+    "start": 579.5,
+    "end": 582.2,
+    "text": "...using a bunch of these little worm guys.",
+    "translation_ru": "...с помощью кучи вот этих маленьких червячков."
+  },
+  {
+    "start": 583.4,
+    "end": 588.2,
+    "text": "I have no bracket-y thing, I see no worm guys whatsoever...",
+    "translation_ru": "У меня нет никакой штуки-скобы, никаких червячков я вообще не вижу..."
+  },
+  {
+    "start": 588.3,
+    "end": 591.4,
+    "text": "...and I cannot feel my legs.",
+    "translation_ru": "...и я не чувствую своих ног."
+  },
+  {
+    "start": 593.0,
+    "end": 594.0,
+    "text": "What's this?",
+    "translation_ru": "А это что?"
+  },
+  {
+    "start": 594.3,
+    "end": 597.3,
+    "text": "I have no idea.",
+    "translation_ru": "Понятия не имею."
+  },
+  {
+    "start": 599.1,
+    "end": 601.6,
+    "text": "Done with the bookcase. - All finished.",
+    "translation_ru": "С книжным шкафом покончено. - Всё готово."
+  },
+  {
+    "start": 605.1,
+    "end": 606.9,
+    "text": "This was Carol's favorite beer.",
+    "translation_ru": "Это было любимое пиво Кэрол."
+  },
+  {
+    "start": 609.0,
+    "end": 611.7,
+    "text": "She always drank it out of the can. I should have known.",
+    "translation_ru": "Она всегда пила его прямо из банки. Мне стоило догадаться."
+  },
+  {
+    "start": 611.9,
+    "end": 615.1,
+    "text": "Hey. Ross, let me ask you a question.",
+    "translation_ru": "Слушай. Росс, можно тебя кое о чём спросить?"
+  },
+  {
+    "start": 615.2,
+    "end": 619.5,
+    "text": "She got the furniture, the stereo, the good TV.",
+    "translation_ru": "Ей досталась мебель, стереосистема, хороший телевизор."
+  },
+  {
+    "start": 619.6,
+    "end": 620.7,
+    "text": "What did you get?",
+    "translation_ru": "А тебе что досталось?"
+  },
+  {
+    "start": 621.0,
+    "end": 622.0,
+    "text": "You guys.",
+    "translation_ru": "Вы, ребята."
+  },
+  {
+    "start": 622.2,
+    "end": 624.3,
+    "text": "Oh, God. Oh, my God. - You got screwed.",
+    "translation_ru": "О боже. О господи. - Тебя обвели вокруг пальца."
+  },
+  {
+    "start": 624.5,
+    "end": 628.8,
+    "text": "Oh, my God. - I know, I know. I'm such an idiot.",
+    "translation_ru": "О боже. - Знаю, знаю. Я такой идиот."
+  },
+  {
+    "start": 629.3,
+    "end": 633.9,
+    "text": "I should've caught on when she went to the dentist four and five times a week.",
+    "translation_ru": "Мне стоило понять всё, когда она ходила к стоматологу по четыре-пять раз в неделю."
+  },
+  {
+    "start": 634.0,
+    "end": 636.3,
+    "text": "I mean, how clean can teeth get?",
+    "translation_ru": "Ну серьёзно, насколько чистыми могут быть зубы?"
+  },
+  {
+    "start": 636.4,
+    "end": 638.8,
+    "text": "My brother's going through that. He's such a mess.",
+    "translation_ru": "Мой брат сейчас через это проходит. Он в полном раздрае."
+  },
+  {
+    "start": 639.0,
+    "end": 640.7,
+    "text": "How did you get through it?",
+    "translation_ru": "А как ты пережил это?"
+  },
+  {
+    "start": 640.9,
+    "end": 644.4,
+    "text": "He might try accidentally breaking something valuable of hers.",
+    "translation_ru": "Он мог бы попробовать как бы случайно сломать что-нибудь ценное из её вещей."
+  },
+  {
+    "start": 644.6,
+    "end": 646.1,
+    "text": "Say her... - Leg?",
+    "translation_ru": "Скажем, её... - Ногу?"
+  },
+  {
+    "start": 646.3,
+    "end": 648.2,
+    "text": "Heh. That's one way of going through it, yeah.",
+    "translation_ru": "Хех. Ну, это один из способов пережить это, да."
+  },
+  {
+    "start": 648.8,
+    "end": 650.3,
+    "text": "Me, I went for the watch.",
+    "translation_ru": "Я вот выбрал часы."
+  },
+  {
+    "start": 650.8,
+    "end": 652.7,
+    "text": "You actually broke her watch? - Mm.",
+    "translation_ru": "Ты правда сломал её часы? - Ага."
+  },
+  {
+    "start": 653.3,
+    "end": 656.4,
+    "text": "Barry, I'm sorry. I am so sorry.",
+    "translation_ru": "Барри, прости меня. Мне так жаль."
+  },
+  {
+    "start": 656.6,
+    "end": 661.5,
+    "text": "You probably think it's about making love with your socks on, but it isn't.",
+    "translation_ru": "Ты, наверное, думаешь, дело в том, что ты занимаешься любовью в носках, но это не так."
+  },
+  {
+    "start": 661.7,
+    "end": 664.5,
+    "text": "It isn't, it's about me. And I...",
+    "translation_ru": "Дело не в этом, дело во мне. И я..."
+  },
+  {
+    "start": 671.6,
+    "end": 674.6,
+    "text": "Hi. Machine cut me off again. Anyway...",
+    "translation_ru": "Привет. Автоответчик снова меня оборвал. В общем..."
+  },
+  {
+    "start": 676.4,
+    "end": 680.5,
+    "text": "You know what's scary? What if there's only one woman for everybody?",
+    "translation_ru": "Знаешь, что страшно? А что, если для каждого мужчины существует только одна женщина?"
+  },
+  {
+    "start": 680.7,
+    "end": 684.1,
+    "text": "I mean, what if you get one woman, and that's it?",
+    "translation_ru": "В смысле, что если тебе достаётся одна женщина, и всё?"
+  },
+  {
+    "start": 684.2,
+    "end": 689.1,
+    "text": "Unfortunately, in my case, there was only one woman for her.",
+    "translation_ru": "К сожалению, в моём случае, для неё существовала только одна женщина."
+  },
+  {
+    "start": 689.6,
+    "end": 692.8,
+    "text": "What are you talking about? One woman.",
+    "translation_ru": "О чём ты вообще? Одна женщина."
+  },
+  {
+    "start": 693.4,
+    "end": 697.0,
+    "text": "That's like saying there's only one flavor of ice cream for you.",
+    "translation_ru": "Это всё равно что сказать, будто существует только один вкус мороженого, который тебе подходит."
+  },
+  {
+    "start": 697.2,
+    "end": 700.9,
+    "text": "Let me tell you something, Ross. There's lots of flavors out there.",
+    "translation_ru": "Вот что я тебе скажу, Росс. Вкусов там очень много."
+  },
+  {
+    "start": 701.1,
+    "end": 705.6,
+    "text": "There's rocky road and cookie dough and bing cherry vanilla.",
+    "translation_ru": "Есть \"рокки роуд\", есть тесто для печенья, есть вишнёво-ванильное."
+  },
+  {
+    "start": 706.2,
+    "end": 710.7,
+    "text": "You can get them with jimmies or nuts or whipped cream.",
+    "translation_ru": "Можно с посыпкой, с орешками или со взбитыми сливками."
+  },
+  {
+    "start": 711.0,
+    "end": 713.6,
+    "text": "This is the best thing that ever happened to you.",
+    "translation_ru": "Это лучшее, что с тобой когда-либо случалось."
+  },
+  {
+    "start": 713.8,
+    "end": 716.7,
+    "text": "You got married. You were like, what, 8?",
+    "translation_ru": "Ты женился. Тебе было сколько, лет восемь?"
+  },
+  {
+    "start": 718.6,
+    "end": 722.6,
+    "text": "Welcome back to the world. Grab a spoon.",
+    "translation_ru": "Добро пожаловать обратно в этот мир. Бери ложку."
+  },
+  {
+    "start": 722.8,
+    "end": 725.3,
+    "text": "I honestly don't know if I'm hungry or horny.",
+    "translation_ru": "Честно говоря, я не понимаю, голоден я или возбуждён."
+  },
+  {
+    "start": 725.8,
+    "end": 727.2,
+    "text": "Then stay out of my freezer.",
+    "translation_ru": "Тогда держись подальше от моего морозильника."
+  },
+  {
+    "start": 730.9,
+    "end": 734.4,
+    "text": "Ever since she walked out on me, I...",
+    "translation_ru": "С тех пор как она ушла от меня, я..."
+  },
+  {
+    "start": 734.7,
+    "end": 736.7,
+    "text": "What? What?",
+    "translation_ru": "Что? Что?"
+  },
+  {
+    "start": 736.8,
+    "end": 738.7,
+    "text": "You wanna spell it out with noodles?",
+    "translation_ru": "Хочешь, я выложу это лапшой по буквам?"
+  },
+  {
+    "start": 738.9,
+    "end": 742.4,
+    "text": "No, it's more of a fifth date kind of revelation.",
+    "translation_ru": "Нет, это скорее откровение для пятого свидания."
+  },
+  {
+    "start": 743.2,
+    "end": 746.3,
+    "text": "Oh, so there's gonna be a fifth date?",
+    "translation_ru": "О, так значит, будет пятое свидание?"
+  },
+  {
+    "start": 747.8,
+    "end": 749.5,
+    "text": "Isn't there?",
+    "translation_ru": "А разве нет?"
+  },
+  {
+    "start": 749.7,
+    "end": 751.9,
+    "text": "Yeah, yeah. I think there is.",
+    "translation_ru": "Да, да. Думаю, будет."
+  },
+  {
+    "start": 753.7,
+    "end": 755.4,
+    "text": "What were you gonna say?",
+    "translation_ru": "Так что ты хотел сказать?"
+  },
+  {
+    "start": 757.0,
+    "end": 759.2,
+    "text": "Well... Er, uh...",
+    "translation_ru": "Ну... э-э, а-а..."
+  },
+  {
+    "start": 760.3,
+    "end": 762.6,
+    "text": "Ever since she left me, um...",
+    "translation_ru": "С тех пор как она меня бросила, э-э..."
+  },
+  {
+    "start": 763.7,
+    "end": 767.0,
+    "text": "...I haven't been able to perform...",
+    "translation_ru": "...я не могу выполнять свои функции..."
+  },
+  {
+    "start": 767.2,
+    "end": 768.4,
+    "text": "...sexually.",
+    "translation_ru": "...в сексуальном плане."
+  },
+  {
+    "start": 771.3,
+    "end": 772.8,
+    "text": "Oh, God! Oh, God! I am so...",
+    "translation_ru": "О боже! О боже! Мне так..."
+  },
+  {
+    "start": 773.0,
+    "end": 774.2,
+    "text": "I'm so sorry. - It's okay.",
+    "translation_ru": "Мне так жаль. - Всё нормально."
+  },
+  {
+    "start": 774.4,
+    "end": 777.9,
+    "text": "Being spit on is probably not what you need right now.",
+    "translation_ru": "Быть оплёванной — наверное, не то, что тебе сейчас нужно."
+  },
+  {
+    "start": 778.0,
+    "end": 779.7,
+    "text": "Um...",
+    "translation_ru": "Э-э..."
+  },
+  {
+    "start": 780.1,
+    "end": 781.2,
+    "text": "How long?",
+    "translation_ru": "Как долго?"
+  },
+  {
+    "start": 781.7,
+    "end": 782.8,
+    "text": "Two years.",
+    "translation_ru": "Два года."
+  },
+  {
+    "start": 783.6,
+    "end": 785.3,
+    "text": "Wow!",
+    "translation_ru": "Ого!"
+  },
+  {
+    "start": 785.5,
+    "end": 788.4,
+    "text": "I'm glad you smashed her watch.",
+    "translation_ru": "Я рада, что ты разбил её часы."
+  },
+  {
+    "start": 790.4,
+    "end": 793.8,
+    "text": "So you still think you might want that fifth date?",
+    "translation_ru": "Так ты всё ещё думаешь, что хочешь то пятое свидание?"
+  },
+  {
+    "start": 796.8,
+    "end": 798.3,
+    "text": "Yeah.",
+    "translation_ru": "Да."
+  },
+  {
+    "start": 798.5,
+    "end": 800.3,
+    "text": "Yeah, I do.",
+    "translation_ru": "Да, хочу."
+  },
+  {
+    "start": 801.5,
+    "end": 804.9,
+    "text": "I, Joanie, take you, Charles, as my lawful husband.",
+    "translation_ru": "Я, Джоуни, беру тебя, Чарльз, в законные мужья."
+  },
+  {
+    "start": 805.2,
+    "end": 808.5,
+    "text": "MINISTER: Do you take Joanie...? - Oh! See.",
+    "translation_ru": "СВЯЩЕННИК: Берёте ли вы Джоуни...? - Оу! Вот видишь."
+  },
+  {
+    "start": 808.6,
+    "end": 813.9,
+    "text": "But Joanie loved Chachi. That's the difference.",
+    "translation_ru": "Но Джоуни любила Чачи. В этом вся разница."
+  },
+  {
+    "start": 815.4,
+    "end": 816.8,
+    "text": "\"Grab a spoon.\"",
+    "translation_ru": "\"Бери ложку.\""
+  },
+  {
+    "start": 817.1,
+    "end": 819.6,
+    "text": "Do you know long it's been since I grabbed a spoon?",
+    "translation_ru": "Ты хоть знаешь, сколько времени прошло с тех пор, как я в последний раз брал ложку?"
+  },
+  {
+    "start": 820.1,
+    "end": 822.9,
+    "text": "Do the words, \"Billy, don't be a hero,\" mean anything to you?",
+    "translation_ru": "Тебе о чём-нибудь говорят слова \"Билли, не геройствуй\"?"
+  },
+  {
+    "start": 825.2,
+    "end": 829.7,
+    "text": "You know, here's the thing. Even if I could get it together enough...",
+    "translation_ru": "Знаешь, вот в чём дело. Даже если бы я смог достаточно собраться с духом..."
+  },
+  {
+    "start": 829.9,
+    "end": 832.4,
+    "text": "...to ask a woman out...",
+    "translation_ru": "...чтобы пригласить женщину на свидание..."
+  },
+  {
+    "start": 832.9,
+    "end": 835.3,
+    "text": "...who am I gonna ask?",
+    "translation_ru": "...кого мне приглашать?"
+  },
+  {
+    "start": 856.6,
+    "end": 858.0,
+    "text": "Isn't this amazing?",
+    "translation_ru": "Разве это не потрясающе?"
+  },
+  {
+    "start": 858.1,
+    "end": 860.5,
+    "text": "I mean, I have never made coffee before in my life.",
+    "translation_ru": "В смысле, я в жизни ни разу не варила кофе."
+  },
+  {
+    "start": 860.7,
+    "end": 863.2,
+    "text": "That is amazing. - Congratulations.",
+    "translation_ru": "Это потрясающе. - Поздравляю."
+  },
+  {
+    "start": 863.4,
+    "end": 868.1,
+    "text": "While you're on a roll, if you feel like you gotta make a Western omelet or something...",
+    "translation_ru": "Раз уж пошла такая полоса, если вдруг захочешь приготовить омлет \"Вестерн\" или что-то такое..."
+  },
+  {
+    "start": 871.0,
+    "end": 874.5,
+    "text": "Although, actually I'm really not that hungry this morning.",
+    "translation_ru": "Хотя, вообще-то, я сегодня утром не особо голоден."
+  },
+  {
+    "start": 875.4,
+    "end": 876.7,
+    "text": "Good morning. MONICA: Good morning.",
+    "translation_ru": "Доброе утро. МОНИКА: Доброе утро."
+  },
+  {
+    "start": 876.9,
+    "end": 878.5,
+    "text": "Morning. JOEY: Morning.",
+    "translation_ru": "Доброе утро. ДЖОУИ: Доброе утро."
+  },
+  {
+    "start": 879.4,
+    "end": 881.6,
+    "text": "Morning. JOEY: Morning, Paul.",
+    "translation_ru": "Доброе утро. ДЖОУИ: Доброе утро, Пол."
+  },
+  {
+    "start": 881.8,
+    "end": 885.0,
+    "text": "Hello, Paul. - Hi. Paul, is it?",
+    "translation_ru": "Здравствуй, Пол. - Привет. Пол, верно?"
+  },
+  {
+    "start": 889.1,
+    "end": 891.8,
+    "text": "MONICA: I had a really great time last night.",
+    "translation_ru": "МОНИКА: Мне вчера было очень хорошо."
+  },
+  {
+    "start": 892.0,
+    "end": 893.9,
+    "text": "PAUL: Thank you. Thank you so much.",
+    "translation_ru": "ПОЛ: Спасибо. Большое тебе спасибо."
+  },
+  {
+    "start": 894.6,
+    "end": 897.5,
+    "text": "We'll talk later, okay? - Yeah.",
+    "translation_ru": "Поговорим позже, ладно? - Да."
+  },
+  {
+    "start": 902.2,
+    "end": 904.0,
+    "text": "Thank you.",
+    "translation_ru": "Спасибо."
+  },
+  {
+    "start": 909.8,
+    "end": 912.6,
+    "text": "That wasn't a real date.",
+    "translation_ru": "Это не было настоящим свиданием."
+  },
+  {
+    "start": 913.3,
+    "end": 916.2,
+    "text": "What the hell do you do on a real date?",
+    "translation_ru": "Тогда что, чёрт возьми, вы делаете на настоящем свидании?"
+  },
+  {
+    "start": 917.0,
+    "end": 920.5,
+    "text": "Shut up and put my table back. JOEY: Okay.",
+    "translation_ru": "Заткнись и поставь мой стол на место. ДЖОУИ: Ладно."
+  },
+  {
+    "start": 920.7,
+    "end": 922.5,
+    "text": "All right, kids, I gotta get to work.",
+    "translation_ru": "Так, дети, мне пора на работу."
+  },
+  {
+    "start": 922.8,
+    "end": 928.3,
+    "text": "If I don't input those numbers, it doesn't make much of a difference.",
+    "translation_ru": "Если я не введу эти цифры, особо ничего не изменится."
+  },
+  {
+    "start": 931.3,
+    "end": 933.4,
+    "text": "So, like, you guys all have jobs?",
+    "translation_ru": "Так, типа, у вас у всех есть работа?"
+  },
+  {
+    "start": 934.2,
+    "end": 935.9,
+    "text": "Yeah, we all have jobs.",
+    "translation_ru": "Да, у всех нас есть работа."
+  },
+  {
+    "start": 936.1,
+    "end": 938.7,
+    "text": "See, that's how we buy stuff.",
+    "translation_ru": "Вот так мы и покупаем всякие вещи."
+  },
+  {
+    "start": 940.4,
+    "end": 941.6,
+    "text": "Yeah, I'm an actor.",
+    "translation_ru": "Да, я актёр."
+  },
+  {
+    "start": 941.9,
+    "end": 944.1,
+    "text": "Wow. Would I have seen you in anything?",
+    "translation_ru": "Ого. Я могла тебя где-нибудь видеть?"
+  },
+  {
+    "start": 944.3,
+    "end": 946.6,
+    "text": "Oh, I doubt it. Mostly regional work.",
+    "translation_ru": "О, сомневаюсь. В основном региональные постановки."
+  },
+  {
+    "start": 946.8,
+    "end": 950.4,
+    "text": "Unless you happened to catch the Wee One's production of Pinocchio.",
+    "translation_ru": "Разве что ты случайно видела постановку \"Пиноккио\" от театра \"Ви Уанс\"."
+  },
+  {
+    "start": 950.7,
+    "end": 953.2,
+    "text": "\"Look, Geppeto. I'm a real live boy.\"",
+    "translation_ru": "\"Смотри, Джеппетто. Я настоящий живой мальчик\"."
+  },
+  {
+    "start": 956.0,
+    "end": 957.7,
+    "text": "I will not take this abuse.",
+    "translation_ru": "Я не потерплю такого обращения."
+  },
+  {
+    "start": 958.0,
+    "end": 959.9,
+    "text": "You're right. I'm sorry.",
+    "translation_ru": "Ты прав. Прости."
+  },
+  {
+    "start": 960.3,
+    "end": 963.0,
+    "text": "Once I was a wooden boy A little wooden boy",
+    "translation_ru": "Когда-то я был деревянным мальчиком Маленьким деревянным мальчиком"
+  },
+  {
+    "start": 967.1,
+    "end": 969.5,
+    "text": "MONICA: So how are you doing today? Did you sleep okay?",
+    "translation_ru": "МОНИКА: Ну как ты сегодня? Хорошо спала?"
+  },
+  {
+    "start": 969.7,
+    "end": 973.0,
+    "text": "Did you talk to Barry? I can't stop smiling.",
+    "translation_ru": "Ты говорила с Барри? Я не могу перестать улыбаться."
+  },
+  {
+    "start": 973.8,
+    "end": 977.7,
+    "text": "I can see that. You look like you slept with a hanger in your mouth.",
+    "translation_ru": "Оно и видно. У тебя такой вид, будто ты спала с вешалкой во рту."
+  },
+  {
+    "start": 982.9,
+    "end": 986.4,
+    "text": "I know. He's just so...",
+    "translation_ru": "Знаю. Он просто такой..."
+  },
+  {
+    "start": 986.6,
+    "end": 988.1,
+    "text": "Remember you and Tony De Marco?",
+    "translation_ru": "Помнишь себя и Тони Де Марко?"
+  },
+  {
+    "start": 988.3,
+    "end": 992.3,
+    "text": "Oh, yeah. - Well, it's like that. With feelings.",
+    "translation_ru": "О, да. - Ну вот, это как тогда. Только с чувствами."
+  },
+  {
+    "start": 993.2,
+    "end": 994.9,
+    "text": "Oh, wow, are you in trouble!",
+    "translation_ru": "Ого, да ты попала!"
+  },
+  {
+    "start": 995.5,
+    "end": 999.3,
+    "text": "Okay, okay. I am just going to get up, go to work...",
+    "translation_ru": "Так, так. Я просто встану, пойду на работу..."
+  },
+  {
+    "start": 999.5,
+    "end": 1002.2,
+    "text": "...and not think about him all day.",
+    "translation_ru": "...и целый день не буду думать о нём."
+  },
+  {
+    "start": 1002.4,
+    "end": 1005.3,
+    "text": "Or else I'm just gonna get up and go to work.",
+    "translation_ru": "Или же я просто встану и пойду на работу."
+  },
+  {
+    "start": 1005.5,
+    "end": 1007.1,
+    "text": "Oh, wish me luck! - What for?",
+    "translation_ru": "О, пожелай мне удачи! - Зачем?"
+  },
+  {
+    "start": 1007.3,
+    "end": 1010.6,
+    "text": "I'm gonna go get one of those job things.",
+    "translation_ru": "Пойду добывать себе одну из этих ваших работ."
+  },
+  {
+    "start": 1018.6,
+    "end": 1021.2,
+    "text": "Hey, Monica. - Hey, Franny. Welcome back.",
+    "translation_ru": "Привет, Моника. - Привет, Фрэнни. С возвращением."
+  },
+  {
+    "start": 1021.4,
+    "end": 1022.9,
+    "text": "How was Florida?",
+    "translation_ru": "Как Флорида?"
+  },
+  {
+    "start": 1023.1,
+    "end": 1024.4,
+    "text": "You had sex, didn't you?",
+    "translation_ru": "Ты занималась сексом, да?"
+  },
+  {
+    "start": 1026.3,
+    "end": 1027.3,
+    "text": "How do you do that?",
+    "translation_ru": "Как ты это делаешь?"
+  },
+  {
+    "start": 1028.4,
+    "end": 1032.2,
+    "text": "So, who? - You know Paul?",
+    "translation_ru": "Так, и с кем? - Ты знаешь Пола?"
+  },
+  {
+    "start": 1032.8,
+    "end": 1034.4,
+    "text": "Paul, the wine guy?",
+    "translation_ru": "Пол, винный парень?"
+  },
+  {
+    "start": 1034.5,
+    "end": 1036.1,
+    "text": "Oh, yeah, I know Paul.",
+    "translation_ru": "О да, я знаю Пола."
+  },
+  {
+    "start": 1038.7,
+    "end": 1041.2,
+    "text": "You mean, you know Paul like I know Paul?",
+    "translation_ru": "То есть, ты знаешь Пола так же, как я знаю Пола?"
+  },
+  {
+    "start": 1041.4,
+    "end": 1043.7,
+    "text": "Are you kidding? I take credit for Paul.",
+    "translation_ru": "Ты шутишь? Это моя заслуга — этот Пол."
+  },
+  {
+    "start": 1043.8,
+    "end": 1048.0,
+    "text": "Before me, there was no snap in his turtle for two years.",
+    "translation_ru": "До меня у него два года ничего не получалось, если ты понимаешь, о чём я."
+  },
+  {
+    "start": 1051.2,
+    "end": 1053.8,
+    "text": "Of course it was a line.",
+    "translation_ru": "Конечно, это была подкатка."
+  },
+  {
+    "start": 1054.2,
+    "end": 1056.8,
+    "text": "Why? Why would anybody do something like that?",
+    "translation_ru": "Зачем? Зачем кому-то делать такое?"
+  },
+  {
+    "start": 1057.1,
+    "end": 1060.3,
+    "text": "We're looking for an answer more sophisticated than:",
+    "translation_ru": "Мы ищем ответ чуть более замысловатый, чем:"
+  },
+  {
+    "start": 1060.5,
+    "end": 1062.4,
+    "text": "\"To get you into bed.\"",
+    "translation_ru": "\"Чтобы затащить тебя в постель\"."
+  },
+  {
+    "start": 1063.4,
+    "end": 1065.0,
+    "text": "Is it me?",
+    "translation_ru": "Дело во мне?"
+  },
+  {
+    "start": 1065.2,
+    "end": 1068.7,
+    "text": "Is it like I have some sort of beacon that only dogs...",
+    "translation_ru": "У меня что, есть какой-то маячок, который слышат только собаки..."
+  },
+  {
+    "start": 1068.9,
+    "end": 1071.5,
+    "text": "...and men with severe emotional problems can hear?",
+    "translation_ru": "...и мужчины с серьёзными эмоциональными проблемами?"
+  },
+  {
+    "start": 1071.7,
+    "end": 1073.7,
+    "text": "All right, come here. Give me your feet.",
+    "translation_ru": "Так, иди сюда. Дай мне свои ноги."
+  },
+  {
+    "start": 1081.2,
+    "end": 1083.0,
+    "text": "I just thought he was nice, you know?",
+    "translation_ru": "Я просто подумала, что он милый, понимаешь?"
+  },
+  {
+    "start": 1085.9,
+    "end": 1088.3,
+    "text": "I can't believe you didn't know it was a line.",
+    "translation_ru": "Не могу поверить, что ты не поняла, что это была подкатка."
+  },
+  {
+    "start": 1093.2,
+    "end": 1094.3,
+    "text": "Guess what.",
+    "translation_ru": "Угадай что."
+  },
+  {
+    "start": 1094.4,
+    "end": 1096.2,
+    "text": "You got a job? - Are you kidding?",
+    "translation_ru": "Ты нашла работу? - Ты шутишь?"
+  },
+  {
+    "start": 1096.4,
+    "end": 1098.1,
+    "text": "I'm trained for nothing.",
+    "translation_ru": "Меня ничему не обучали."
+  },
+  {
+    "start": 1099.9,
+    "end": 1101.9,
+    "text": "I was laughed out of 12 interviews today.",
+    "translation_ru": "Сегодня меня со смехом выгнали с 12 собеседований."
+  },
+  {
+    "start": 1102.1,
+    "end": 1103.6,
+    "text": "Yet you're surprisingly upbeat.",
+    "translation_ru": "И всё же ты на удивление в хорошем настроении."
+  },
+  {
+    "start": 1103.9,
+    "end": 1107.4,
+    "text": "Well, you would be too if you found Joan and David boots on sale...",
+    "translation_ru": "Ну, ты бы тоже была в хорошем настроении, если бы нашла на распродаже сапоги Joan and David..."
+  },
+  {
+    "start": 1107.5,
+    "end": 1109.3,
+    "text": "...50 percent off.",
+    "translation_ru": "...со скидкой 50 процентов."
+  },
+  {
+    "start": 1109.5,
+    "end": 1111.3,
+    "text": "Oh, how well you know me.",
+    "translation_ru": "О, как же хорошо ты меня знаешь."
+  },
+  {
+    "start": 1112.9,
+    "end": 1115.4,
+    "text": "They're my new \"I don't need a job or my parents.",
+    "translation_ru": "Это мои новые сапоги \"Мне не нужна работа и родители."
+  },
+  {
+    "start": 1115.6,
+    "end": 1117.8,
+    "text": "I've got great boots\" boots.",
+    "translation_ru": "У меня классные сапоги\" сапоги."
+  },
+  {
+    "start": 1119.2,
+    "end": 1121.4,
+    "text": "How'd you pay for them? - Uh, credit card.",
+    "translation_ru": "Как ты за них расплатилась? - Э-э, кредиткой."
+  },
+  {
+    "start": 1121.9,
+    "end": 1123.6,
+    "text": "And who pays for that?",
+    "translation_ru": "А кто платит по кредитке?"
+  },
+  {
+    "start": 1124.2,
+    "end": 1126.3,
+    "text": "Um, my father.",
+    "translation_ru": "Э-э, мой отец."
+  },
+  {
+    "start": 1128.9,
+    "end": 1131.1,
+    "text": "You can't live off your parents your whole life.",
+    "translation_ru": "Ты не можешь всю жизнь жить за счёт родителей."
+  },
+  {
+    "start": 1131.3,
+    "end": 1135.0,
+    "text": "I know that. That's why I was getting married.",
+    "translation_ru": "Я знаю. Именно поэтому я и собиралась замуж."
+  },
+  {
+    "start": 1135.3,
+    "end": 1138.3,
+    "text": "Give her a break. It's hard being on your own for the first time.",
+    "translation_ru": "Отстань от неё. Тяжело в первый раз быть самостоятельной."
+  },
+  {
+    "start": 1138.5,
+    "end": 1140.0,
+    "text": "Thank you. - You're welcome.",
+    "translation_ru": "Спасибо. - Пожалуйста."
+  },
+  {
+    "start": 1140.2,
+    "end": 1142.9,
+    "text": "I remember when I first came to this city, I was 14.",
+    "translation_ru": "Помню, когда я впервые приехала в этот город, мне было 14."
+  },
+  {
+    "start": 1143.1,
+    "end": 1145.9,
+    "text": "My mom had killed herself and my stepdad was back in prison.",
+    "translation_ru": "Моя мама покончила с собой, а отчим снова сел в тюрьму."
+  },
+  {
+    "start": 1146.1,
+    "end": 1148.1,
+    "text": "And I got here, and I didn't know anybody.",
+    "translation_ru": "Я приехала сюда и никого не знала."
+  },
+  {
+    "start": 1148.3,
+    "end": 1151.7,
+    "text": "I ended up living with this albino guy who was cleaning windshields...",
+    "translation_ru": "В итоге я жила с одним парнем-альбиносом, который мыл лобовые стёкла..."
+  },
+  {
+    "start": 1151.9,
+    "end": 1155.7,
+    "text": "...outside Port Authority. And then he killed himself.",
+    "translation_ru": "...у автовокзала Port Authority. А потом он покончил с собой."
+  },
+  {
+    "start": 1156.4,
+    "end": 1160.2,
+    "text": "And then I found aromatherapy. So believe me, I know exactly how you feel.",
+    "translation_ru": "А потом я открыла для себя ароматерапию. Так что поверь, я прекрасно понимаю, что ты сейчас чувствуешь."
+  },
+  {
+    "start": 1164.4,
+    "end": 1167.1,
+    "text": "The word you're looking for is:",
+    "translation_ru": "Слово, которое ты ищешь:"
+  },
+  {
+    "start": 1167.7,
+    "end": 1169.0,
+    "text": "\"Anyway...\"",
+    "translation_ru": "\"В общем...\""
+  },
+  {
+    "start": 1173.1,
+    "end": 1174.3,
+    "text": "All right. You ready?",
+    "translation_ru": "Так. Готова?"
+  },
+  {
+    "start": 1174.4,
+    "end": 1176.1,
+    "text": "I don't think so. ROSS: Oh, come on.",
+    "translation_ru": "Не думаю. РОСС: Да ладно тебе."
+  },
+  {
+    "start": 1176.5,
+    "end": 1177.9,
+    "text": "Cut. Cut.",
+    "translation_ru": "Снято. Снято."
+  },
+  {
+    "start": 1178.1,
+    "end": 1181.1,
+    "text": "ALL: Cut, cut, cut.",
+    "translation_ru": "ВСЕ: Снято, снято, снято."
+  },
+  {
+    "start": 1182.7,
+    "end": 1185.6,
+    "text": "ROSS: Hey. MONICA: All right.",
+    "translation_ru": "РОСС: Привет. МОНИКА: Ну вот."
+  },
+  {
+    "start": 1185.9,
+    "end": 1187.6,
+    "text": "Welcome to the real world.",
+    "translation_ru": "Добро пожаловать в реальный мир."
+  },
+  {
+    "start": 1187.8,
+    "end": 1190.5,
+    "text": "It sucks. You're gonna love it.",
+    "translation_ru": "Он паршивый. Тебе понравится."
+  },
+  {
+    "start": 1197.4,
+    "end": 1200.8,
+    "text": "Well, that's it. You gonna crash on the couch?",
+    "translation_ru": "Ну, вот и всё. Останешься спать на диване?"
+  },
+  {
+    "start": 1201.0,
+    "end": 1204.3,
+    "text": "No. No, I gotta go home sometime. - Are you gonna be okay?",
+    "translation_ru": "Нет. Нет, мне же когда-то придётся пойти домой. - Ты справишься?"
+  },
+  {
+    "start": 1204.5,
+    "end": 1206.0,
+    "text": "Yeah.",
+    "translation_ru": "Да."
+  },
+  {
+    "start": 1207.0,
+    "end": 1208.9,
+    "text": "Look what I just found on the floor.",
+    "translation_ru": "Смотри, что я только что нашла на полу."
+  },
+  {
+    "start": 1211.2,
+    "end": 1212.5,
+    "text": "What?",
+    "translation_ru": "Что?"
+  },
+  {
+    "start": 1212.9,
+    "end": 1214.4,
+    "text": "That's Paul's watch.",
+    "translation_ru": "Это часы Пола."
+  },
+  {
+    "start": 1214.6,
+    "end": 1216.7,
+    "text": "You can just put it back where you found it.",
+    "translation_ru": "Можешь просто положить их туда, где нашла."
+  },
+  {
+    "start": 1218.3,
+    "end": 1221.8,
+    "text": "Oh, boy. All right. Good night, everybody.",
+    "translation_ru": "Ох, ну и дела. Ладно. Спокойной ночи всем."
+  },
+  {
+    "start": 1221.9,
+    "end": 1223.0,
+    "text": "ROSS & RACHEL: Good night.",
+    "translation_ru": "РОСС и РЕЙЧЕЛ: Спокойной ночи."
+  },
+  {
+    "start": 1231.5,
+    "end": 1233.1,
+    "text": "Hmm. - Hmm.",
+    "translation_ru": "Хм. - Хм."
+  },
+  {
+    "start": 1234.3,
+    "end": 1235.5,
+    "text": "Oh, sorry. - No. Oh, no. Go.",
+    "translation_ru": "Ой, прости. - Нет-нет. Давай, ешь."
+  },
+  {
+    "start": 1235.7,
+    "end": 1237.7,
+    "text": "No, have it, really. - Split it?",
+    "translation_ru": "Нет, правда, бери себе. - Поделим?"
+  },
+  {
+    "start": 1237.8,
+    "end": 1239.8,
+    "text": "Okay. - Okay.",
+    "translation_ru": "Хорошо. - Хорошо."
+  },
+  {
+    "start": 1241.7,
+    "end": 1242.8,
+    "text": "Thanks.",
+    "translation_ru": "Спасибо."
+  },
+  {
+    "start": 1243.5,
+    "end": 1247.1,
+    "text": "You probably didn't know this, but back in high school I had...",
+    "translation_ru": "Ты, наверное, не знал, но ещё в школе я..."
+  },
+  {
+    "start": 1247.2,
+    "end": 1249.1,
+    "text": "...a major crush on you.",
+    "translation_ru": "...была по уши в тебя влюблена."
+  },
+  {
+    "start": 1250.5,
+    "end": 1251.7,
+    "text": "I knew.",
+    "translation_ru": "Я знал."
+  },
+  {
+    "start": 1252.1,
+    "end": 1254.3,
+    "text": "You did? Oh.",
+    "translation_ru": "Знал? Ой."
+  },
+  {
+    "start": 1255.1,
+    "end": 1258.1,
+    "text": "I figured you thought I was Monica's geeky older brother.",
+    "translation_ru": "Я думал, ты считала меня занудным старшим братом Моники."
+  },
+  {
+    "start": 1258.9,
+    "end": 1260.9,
+    "text": "I did. - Oh.",
+    "translation_ru": "Так и было. - Ох."
+  },
+  {
+    "start": 1265.5,
+    "end": 1267.3,
+    "text": "Listen, do you think...",
+    "translation_ru": "Слушай, как думаешь..."
+  },
+  {
+    "start": 1267.5,
+    "end": 1271.0,
+    "text": "And try not to let my vulnerability become any kind of a factor here.",
+    "translation_ru": "И постарайся не учитывать мою уязвимость в этой ситуации."
+  },
+  {
+    "start": 1273.1,
+    "end": 1277.0,
+    "text": "Do you think it would be okay if I ask you out sometime, maybe?",
+    "translation_ru": "Как думаешь, было бы нормально, если бы я пригласил тебя куда-нибудь, может быть?"
+  },
+  {
+    "start": 1278.2,
+    "end": 1280.1,
+    "text": "Yeah.",
+    "translation_ru": "Да."
+  },
+  {
+    "start": 1280.5,
+    "end": 1281.8,
+    "text": "Maybe.",
+    "translation_ru": "Может быть."
+  },
+  {
+    "start": 1282.8,
+    "end": 1284.7,
+    "text": "Okay.",
+    "translation_ru": "Хорошо."
+  },
+  {
+    "start": 1289.4,
+    "end": 1291.9,
+    "text": "Okay, maybe I will.",
+    "translation_ru": "Ладно, может, я так и сделаю."
+  },
+  {
+    "start": 1295.8,
+    "end": 1298.0,
+    "text": "Good night. - Good night.",
+    "translation_ru": "Спокойной ночи. - Спокойной ночи."
+  },
+  {
+    "start": 1311.5,
+    "end": 1313.2,
+    "text": "See you.",
+    "translation_ru": "Увидимся."
+  },
+  {
+    "start": 1313.7,
+    "end": 1314.8,
+    "text": "ROSS: Mm-hm.",
+    "translation_ru": "РОСС: Ага."
+  },
+  {
+    "start": 1314.9,
+    "end": 1317.4,
+    "text": "Wait, wait. Hey, what's with you?",
+    "translation_ru": "Погоди, погоди. Эй, что с тобой?"
+  },
+  {
+    "start": 1319.7,
+    "end": 1322.3,
+    "text": "I just grabbed a spoon.",
+    "translation_ru": "Я только что взял ложку."
+  },
+  {
+    "start": 1330.5,
+    "end": 1332.0,
+    "text": "Can't believe what I'm hearing.",
+    "translation_ru": "Не могу поверить в то, что слышу."
+  },
+  {
+    "start": 1332.2,
+    "end": 1333.9,
+    "text": "I can't believe What I'm hearing here",
+    "translation_ru": "Не могу поверить В то, что слышу здесь"
+  },
+  {
+    "start": 1334.0,
+    "end": 1336.2,
+    "text": "What? I said you had... - What? I said you had...",
+    "translation_ru": "Что? Я сказал, у тебя есть... - Что? Я сказал, у тебя есть..."
+  },
+  {
+    "start": 1337.3,
+    "end": 1339.8,
+    "text": "Would you stop? - Oh, was I doing it again?",
+    "translation_ru": "Может, хватит? - Ой, я опять это делаю?"
+  },
+  {
+    "start": 1340.0,
+    "end": 1341.8,
+    "text": "ALL: Yes.",
+    "translation_ru": "ВСЕ: Да."
+  },
+  {
+    "start": 1342.8,
+    "end": 1344.8,
+    "text": "WOMAN: Would anybody like more coffee?",
+    "translation_ru": "ЖЕНЩИНА: Кому-нибудь ещё кофе?"
+  },
+  {
+    "start": 1346.7,
+    "end": 1349.2,
+    "text": "Did you make it or are you just serving it?",
+    "translation_ru": "Ты его сварила, или только разносишь?"
+  },
+  {
+    "start": 1349.3,
+    "end": 1352.6,
+    "text": "I'm just serving it. CHANDLER: I'll have a cup of coffee.",
+    "translation_ru": "Я его только разношу. ЧЕНДЛЕР: Мне чашечку кофе."
+  },
+  {
+    "start": 1353.1,
+    "end": 1354.4,
+    "text": "Kids, new dream.",
+    "translation_ru": "Ребят, новый сон."
+  },
+  {
+    "start": 1355.1,
+    "end": 1358.4,
+    "text": "I'm in Las Vegas. I'm Liza Minnelli.",
+    "translation_ru": "Я в Лас-Вегасе. Я — Лайза Минелли."
+  }
+];
+
+let idx = 0;
+let checkInterval = null;
+
+const video = document.getElementById('video');
+
+function playClip(start, end) {
+  if (checkInterval) clearInterval(checkInterval);
+  video.currentTime = start;
+  video.play();
+  checkInterval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      clearInterval(checkInterval);
+      checkInterval = null;
+    }
+  }, 50);
+}
+
+function loadPhrase() {
+  document.getElementById('counter').textContent = `${idx + 1} / ${phrases.length}`;
+  document.getElementById('answer-block').classList.remove('visible');
+  document.getElementById('answer-display').textContent = '';
+  document.getElementById('translation-display').textContent = '';
+}
+
+function stopCheck() {
+  if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+}
+
+function playUntil(end) {
+  stopCheck();
+  const nextBtn = document.getElementById('next-btn');
+  if (nextBtn) nextBtn.disabled = true;
+  video.play();
+  checkInterval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      stopCheck();
+      if (nextBtn) nextBtn.disabled = false;
+    }
+  }, 50);
+}
+
+function replay() {
+  const p = phrases[idx];
+  stopCheck();
+  document.getElementById('loading-msg').style.display = 'none';
+  video.currentTime = p.start;
+  playUntil(p.end);
+}
+
+function showAnswer() {
+  const p = phrases[idx];
+  document.getElementById('answer-display').textContent = p.text;
+  const showRu = document.getElementById('ru-toggle').checked;
+  document.getElementById('translation-display').textContent = (showRu && p.translation_ru) ? p.translation_ru : '';
+  document.getElementById('answer-block').classList.add('visible');
+}
+
+function next() {
+  idx = (idx + 1) % phrases.length;
+  loadPhrase();
+  playUntil(phrases[idx].end);
+}
+
+function startListening() {
+  document.getElementById('start-row').style.display = 'none';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('counter').style.opacity = '1';
+  loadPhrase();
+  video.currentTime = 0;
+  playUntil(phrases[idx].end);
+
+  const msg = document.getElementById('loading-msg');
+  document.getElementById('answer-block').classList.add('visible');
+  msg.textContent = 'Подождите, видео загружается...';
+  msg.style.display = '';
+  setTimeout(() => { msg.style.display = 'none'; }, 10000);
+}
+
+// No auto-play on load
+video.addEventListener('canplay', () => {
+  document.getElementById('loading-msg').style.display = 'none';
+  const startRow = document.getElementById('start-row');
+  startRow.style.opacity = '1';
+  startRow.style.pointerEvents = 'auto';
+}, { once: true });
+</script>
+</body>
+</html>

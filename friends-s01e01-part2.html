@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Аудирование — Verb Trainer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+    gap: 1.25rem;
+  }
+
+  header { text-align: center; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+  }
+
+  .counter {
+    font-size: 14px;
+    color: var(--blue-label);
+  }
+
+  /* Video */
+  video {
+    width: 100%;
+    max-width: 480px;
+    border-radius: var(--radius-card);
+    background: #000;
+    display: block;
+  }
+
+  /* Answer area */
+  .answer-block {
+    width: 100%;
+    max-width: 480px;
+    min-height: 52px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .answer-block.visible { opacity: 1; }
+
+  .answer-en {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    line-height: 1.4;
+  }
+
+  .answer-ru {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--blue-label);
+    line-height: 1.4;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 480px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    flex: 1;
+    border-radius: var(--radius-btn);
+    padding: 13px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn-replay {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .btn-replay:hover { background: var(--blue-light); }
+
+  .btn-answer {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .btn-answer:hover { background: var(--blue-light); }
+
+  .btn-next {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+  }
+  .btn-next:hover { background: var(--blue-hover); }
+  .btn-next:disabled { opacity: 0.4; cursor: default; }
+  .toggle-label { display: flex; align-items: center; cursor: pointer; }
+  .toggle-label input { display: none; }
+  .toggle-track {
+    width: 32px; height: 18px;
+    background: var(--blue-border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+  }
+  .toggle-label input:checked + .toggle-track { background: var(--blue-dark); }
+  .toggle-label input:checked + .toggle-track::after { left: 17px; }
+  .action-btn:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='friends-s01e01.html'">←</button>
+    <h1>Аудирование</h1>
+    <label class="toggle-label" title="Показывать перевод">
+      <input type="checkbox" id="ru-toggle" checked />
+      <span class="toggle-track"></span>
+    </label>
+  </div>
+</header>
+
+<div class="counter" id="counter" style="opacity:0;">1 / 70</div>
+
+<video id="video" src="https://res.cloudinary.com/ufbidw3j/video/upload/s01e01p02_lybp0n.mp4" preload="metadata" playsinline></video>
+
+<div class="answer-block" id="answer-block">
+  <div class="answer-en" id="answer-display"></div>
+  <div class="answer-ru" id="translation-display"></div>
+  <div id="loading-msg" style="display:none;font-size:14px;color:var(--blue-label);font-style:italic;">Подождите, видео загружается...</div>
+</div>
+
+<div id="controls" style="display:none;" class="btn-row">
+  <button class="action-btn btn-replay" onclick="replay()">↺ Повторить</button>
+  <button class="action-btn btn-answer" onclick="showAnswer()">Текст</button>
+  <button class="action-btn btn-next" id="next-btn" onclick="next()">Следующее →</button>
+</div>
+
+<div id="start-row" class="btn-row" style="justify-content:center;">
+  <button class="action-btn btn-next" style="max-width:200px;" onclick="startListening()">Начать</button>
+</div>
+
+<script>
+const phrases = [
+  {
+    "start": 5.2,
+    "end": 7.3,
+    "text": "[SPEAKING IN SPANISH ON TV]",
+    "translation_ru": "[РЕЧЬ НА ИСПАНСКОМ ПО ТЕЛЕВИЗОРУ]"
+  },
+  {
+    "start": 12.1,
+    "end": 14.6,
+    "text": "I'm guessing he bought her the big pipe organ...",
+    "translation_ru": "Похоже, он купил ей большой трубный орган..."
+  },
+  {
+    "start": 14.7,
+    "end": 17.2,
+    "text": "...and she's really not happy about it.",
+    "translation_ru": "...и она этому совсем не рада."
+  },
+  {
+    "start": 18.5,
+    "end": 21.5,
+    "text": "Daddy, I just... I can't marry him.",
+    "translation_ru": "Папа, я просто... я не могу выйти за него замуж."
+  },
+  {
+    "start": 21.7,
+    "end": 23.3,
+    "text": "I'm sorry.",
+    "translation_ru": "Прости."
+  },
+  {
+    "start": 23.5,
+    "end": 26.4,
+    "text": "I just don't love him.",
+    "translation_ru": "Я просто не люблю его."
+  },
+  {
+    "start": 26.8,
+    "end": 29.5,
+    "text": "Well, it matters to me.",
+    "translation_ru": "Ну, для меня это важно."
+  },
+  {
+    "start": 32.0,
+    "end": 34.4,
+    "text": "CHANDLER: She should not be wearing those pants.",
+    "translation_ru": "ЧЕНДЛЕР: Ей не стоит носить эти брюки."
+  },
+  {
+    "start": 35.6,
+    "end": 37.6,
+    "text": "I say push her down the stairs.",
+    "translation_ru": "Я предлагаю столкнуть её с лестницы."
+  },
+  {
+    "start": 37.8,
+    "end": 41.0,
+    "text": "ALL: Push her down the stairs! Push her down the stairs!",
+    "translation_ru": "ВСЕ: Столкни её с лестницы! Столкни её с лестницы!"
+  },
+  {
+    "start": 45.2,
+    "end": 47.2,
+    "text": "Come on, Daddy, listen to me!",
+    "translation_ru": "Ну же, папа, послушай меня!"
+  },
+  {
+    "start": 47.4,
+    "end": 52.0,
+    "text": "It's like all of my life, everyone's always told me, \"You're a shoe!",
+    "translation_ru": "Всю мою жизнь мне все говорили: \"Ты туфля!"
+  },
+  {
+    "start": 52.2,
+    "end": 54.2,
+    "text": "You're a shoe! You're a shoe! You're a shoe!\"",
+    "translation_ru": "Ты туфля! Ты туфля! Ты туфля!\""
+  },
+  {
+    "start": 54.4,
+    "end": 57.6,
+    "text": "Then today I stopped and said, \"What if I don't wanna be a shoe?",
+    "translation_ru": "А сегодня я вдруг остановилась и подумала: \"А если я не хочу быть туфлей?"
+  },
+  {
+    "start": 57.8,
+    "end": 61.0,
+    "text": "What if I wanna be a purse? You know?",
+    "translation_ru": "Что если я хочу быть сумочкой? Понимаешь?"
+  },
+  {
+    "start": 61.2,
+    "end": 63.0,
+    "text": "Or a hat?\"",
+    "translation_ru": "Или шляпкой?\""
+  },
+  {
+    "start": 63.9,
+    "end": 66.4,
+    "text": "I don't want you to buy me a hat, I am a hat.",
+    "translation_ru": "Я не хочу, чтобы ты покупал мне шляпку, я и есть шляпка."
+  },
+  {
+    "start": 66.6,
+    "end": 68.8,
+    "text": "It's a metaphor, Daddy!",
+    "translation_ru": "Это метафора, папа!"
+  },
+  {
+    "start": 70.5,
+    "end": 72.4,
+    "text": "You can see where he'd have trouble.",
+    "translation_ru": "Понятно, почему ему сложно это понять."
+  },
+  {
+    "start": 75.6,
+    "end": 77.5,
+    "text": "Look, Daddy, it's my life.",
+    "translation_ru": "Слушай, папа, это моя жизнь."
+  },
+  {
+    "start": 78.8,
+    "end": 81.3,
+    "text": "Well, maybe I'll just stay here with Monica.",
+    "translation_ru": "Ну что ж, может, я просто останусь здесь, у Моники."
+  },
+  {
+    "start": 84.3,
+    "end": 86.8,
+    "text": "I guess we've established she's staying with Monica.",
+    "translation_ru": "Похоже, решено — она остаётся у Моники."
+  },
+  {
+    "start": 88.9,
+    "end": 91.7,
+    "text": "Well, maybe that's my decision.",
+    "translation_ru": "Ну, может, это моё решение."
+  },
+  {
+    "start": 92.3,
+    "end": 94.5,
+    "text": "Well, maybe I don't need your money.",
+    "translation_ru": "Может, мне не нужны твои деньги."
+  },
+  {
+    "start": 94.7,
+    "end": 96.9,
+    "text": "Wait! Wait! I said maybe!",
+    "translation_ru": "Стой! Стой! Я сказала \"может\"!"
+  },
+  {
+    "start": 103.9,
+    "end": 106.1,
+    "text": "Okay. Just breathe, that's it.",
+    "translation_ru": "Так. Просто дыши, вот так."
+  },
+  {
+    "start": 106.3,
+    "end": 108.8,
+    "text": "Just try to think of nice, calm things.",
+    "translation_ru": "Просто думай о чём-нибудь приятном и спокойном."
+  },
+  {
+    "start": 109.0,
+    "end": 112.9,
+    "text": "Raindrops on roses And whiskers on kittens",
+    "translation_ru": "Капли дождя на розах И усики котят"
+  },
+  {
+    "start": 113.3,
+    "end": 117.2,
+    "text": "Doorbells and sleigh bells And something with mittens",
+    "translation_ru": "Дверные звонки и бубенцы И что-то там про варежки"
+  },
+  {
+    "start": 118.0,
+    "end": 121.3,
+    "text": "La la la something With string",
+    "translation_ru": "Ла-ла-ла что-то там На верёвочке"
+  },
+  {
+    "start": 121.5,
+    "end": 123.4,
+    "text": "I'm all better now.",
+    "translation_ru": "Мне уже намного лучше."
+  },
+  {
+    "start": 125.2,
+    "end": 127.2,
+    "text": "I helped.",
+    "translation_ru": "Я помогла."
+  },
+  {
+    "start": 128.9,
+    "end": 131.2,
+    "text": "MONICA: Look, this is probably for the best, you know?",
+    "translation_ru": "МОНИКА: Слушай, возможно, это к лучшему, понимаешь?"
+  },
+  {
+    "start": 131.5,
+    "end": 134.1,
+    "text": "Independence. Taking control of your life.",
+    "translation_ru": "Независимость. Взять свою жизнь под контроль."
+  },
+  {
+    "start": 134.3,
+    "end": 138.6,
+    "text": "And, hey, if you need anything, you can always come to Joey.",
+    "translation_ru": "И, кстати, если тебе что-то понадобится, всегда можешь обратиться к Джоуи."
+  },
+  {
+    "start": 138.8,
+    "end": 142.2,
+    "text": "Me and Chandler live right across the hall. And he's away a lot.",
+    "translation_ru": "Мы с Чендлером живём прямо напротив. А его часто не бывает дома."
+  },
+  {
+    "start": 144.1,
+    "end": 146.6,
+    "text": "Joey, stop hitting on her. It's her wedding day.",
+    "translation_ru": "Джоуи, хватит к ней клеиться. У неё сегодня был день свадьбы."
+  },
+  {
+    "start": 146.8,
+    "end": 148.8,
+    "text": "What? Like there's a rule or something?",
+    "translation_ru": "Что? А что, есть какое-то правило на этот счёт?"
+  },
+  {
+    "start": 151.3,
+    "end": 154.9,
+    "text": "Please don't do that again. It's a horrible sound.",
+    "translation_ru": "Пожалуйста, больше так не делай. Ужасный звук."
+  },
+  {
+    "start": 155.0,
+    "end": 157.5,
+    "text": "PAUL: Uh, it's Paul. - Buzz him in.",
+    "translation_ru": "ПОЛ: Э-э, это Пол. - Впусти его."
+  },
+  {
+    "start": 157.8,
+    "end": 160.1,
+    "text": "Who's Paul? - Paul, the wine guy, Paul?",
+    "translation_ru": "Кто такой Пол? - Пол, тот винный парень, Пол?"
+  },
+  {
+    "start": 160.3,
+    "end": 161.3,
+    "text": "Maybe.",
+    "translation_ru": "Может быть."
+  },
+  {
+    "start": 161.5,
+    "end": 164.8,
+    "text": "Wait a minute. Your \"not a real date\" is with Paul, the wine guy?",
+    "translation_ru": "Погоди-ка. Твоё \"не настоящее свидание\" — с Полом, винным парнем?"
+  },
+  {
+    "start": 165.0,
+    "end": 166.8,
+    "text": "He finally asked you out? - Yes.",
+    "translation_ru": "Он наконец пригласил тебя? - Да."
+  },
+  {
+    "start": 167.0,
+    "end": 168.8,
+    "text": "Ooh. This is a \"Dear Diary\" moment.",
+    "translation_ru": "Ооо. Прямо просится в дневник."
+  },
+  {
+    "start": 170.3,
+    "end": 171.8,
+    "text": "Rach, wait, I can cancel.",
+    "translation_ru": "Рейч, погоди, я могу отменить."
+  },
+  {
+    "start": 172.1,
+    "end": 173.9,
+    "text": "Please, no. Go, I'll be fine.",
+    "translation_ru": "Нет, пожалуйста. Иди, я в порядке."
+  },
+  {
+    "start": 174.0,
+    "end": 177.7,
+    "text": "Ross, are you okay? I mean, do you want me to stay?",
+    "translation_ru": "Росс, ты как? В смысле, хочешь, чтобы я осталась?"
+  },
+  {
+    "start": 178.6,
+    "end": 180.7,
+    "text": "That'd be good.",
+    "translation_ru": "Было бы неплохо."
+  },
+  {
+    "start": 181.1,
+    "end": 184.9,
+    "text": "Really? - No, go on! It's Paul, the wine guy.",
+    "translation_ru": "Правда? - Нет, иди! Это же Пол, винный парень."
+  },
+  {
+    "start": 188.7,
+    "end": 191.1,
+    "text": "MONICA: Hi, come in. Paul, this is...",
+    "translation_ru": "МОНИКА: Привет, заходи. Пол, это..."
+  },
+  {
+    "start": 192.0,
+    "end": 194.5,
+    "text": "...everybody. Everybody, this is Paul.",
+    "translation_ru": "...все наши. Все, это Пол."
+  },
+  {
+    "start": 195.0,
+    "end": 196.0,
+    "text": "JOEY: Paul, the wine guy.",
+    "translation_ru": "ДЖОУИ: Пол, винный парень."
+  },
+  {
+    "start": 196.3,
+    "end": 200.1,
+    "text": "Wine guy. - I didn't catch your name. Paul, was it?",
+    "translation_ru": "Винный парень. - Я не расслышал, как тебя зовут. Пол, да?"
+  },
+  {
+    "start": 200.5,
+    "end": 203.1,
+    "text": "Okay. Sit down. Two seconds. - Okay.",
+    "translation_ru": "Так. Присаживайся. Секундочку. - Хорошо."
+  },
+  {
+    "start": 207.2,
+    "end": 210.3,
+    "text": "Ooh, I just pulled out four eyelashes. That can't be good.",
+    "translation_ru": "Ой, я только что выдернула четыре ресницы. Это плохой знак."
+  },
+  {
+    "start": 212.9,
+    "end": 214.7,
+    "text": "So, Rachel, what are you up to tonight?",
+    "translation_ru": "Итак, Рейчел, чем занимаешься сегодня вечером?"
+  },
+  {
+    "start": 215.3,
+    "end": 219.1,
+    "text": "Well, I was supposed to be headed for Aruba on my honeymoon...",
+    "translation_ru": "Ну, вообще-то я должна была лететь в Арубу в свадебное путешествие..."
+  },
+  {
+    "start": 219.3,
+    "end": 220.3,
+    "text": "...so, nothing.",
+    "translation_ru": "...так что ничем."
+  },
+  {
+    "start": 222.7,
+    "end": 225.0,
+    "text": "Right. You're not even getting your honeymoon.",
+    "translation_ru": "Точно. У тебя даже медового месяца не будет."
+  },
+  {
+    "start": 225.2,
+    "end": 229.2,
+    "text": "God. No, no. Although, Aruba. Heh. This time of year? Eh.",
+    "translation_ru": "Боже. Нет-нет. Хотя, Аруба. Хех. В это время года? Эх."
+  },
+  {
+    "start": 229.4,
+    "end": 232.0,
+    "text": "Talk about your...",
+    "translation_ru": "Там же одни..."
+  },
+  {
+    "start": 232.1,
+    "end": 233.2,
+    "text": "...big lizards.",
+    "translation_ru": "...большие ящерицы."
+  },
+  {
+    "start": 238.0,
+    "end": 240.7,
+    "text": "Anyway, if you don't feel like being alone tonight...",
+    "translation_ru": "В общем, если не хочешь сегодня оставаться одна..."
+  },
+  {
+    "start": 240.9,
+    "end": 243.7,
+    "text": "...Joey and Chandler are helping me with my furniture.",
+    "translation_ru": "...Джоуи и Чендлер помогают мне с мебелью."
+  },
+  {
+    "start": 243.9,
+    "end": 247.1,
+    "text": "Yes, and we're very excited about it.",
+    "translation_ru": "Да, и мы просто в восторге от этого."
+  },
+  {
+    "start": 247.2,
+    "end": 250.6,
+    "text": "Actually, thanks, but I'm just gonna hang out here tonight.",
+    "translation_ru": "Вообще-то спасибо, но я, пожалуй, просто побуду здесь сегодня."
+  },
+  {
+    "start": 250.7,
+    "end": 252.8,
+    "text": "It's been a long day. - Oh, sure. Okay. Sure.",
+    "translation_ru": "Это был длинный день. - Ну да, конечно. Ладно."
+  },
+  {
+    "start": 252.9,
+    "end": 254.3,
+    "text": "Hey, Pheebs, you wanna help?",
+    "translation_ru": "Эй, Фиби, хочешь помочь?"
+  },
+  {
+    "start": 254.7,
+    "end": 256.6,
+    "text": "Oh, I wish I could, but I don't want to.",
+    "translation_ru": "Ох, я бы рада, но не хочу."
+  }
+];
+
+let idx = 0;
+let checkInterval = null;
+
+const video = document.getElementById('video');
+
+function playClip(start, end) {
+  if (checkInterval) clearInterval(checkInterval);
+  video.currentTime = start;
+  video.play();
+  checkInterval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      clearInterval(checkInterval);
+      checkInterval = null;
+    }
+  }, 50);
+}
+
+function loadPhrase() {
+  document.getElementById('counter').textContent = `${idx + 1} / ${phrases.length}`;
+  document.getElementById('answer-block').classList.remove('visible');
+  document.getElementById('answer-display').textContent = '';
+  document.getElementById('translation-display').textContent = '';
+}
+
+function stopCheck() {
+  if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+}
+
+function playUntil(end) {
+  stopCheck();
+  const nextBtn = document.getElementById('next-btn');
+  if (nextBtn) nextBtn.disabled = true;
+  video.play();
+  checkInterval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      stopCheck();
+      if (nextBtn) nextBtn.disabled = false;
+    }
+  }, 50);
+}
+
+function replay() {
+  const p = phrases[idx];
+  stopCheck();
+  document.getElementById('loading-msg').style.display = 'none';
+  video.currentTime = p.start;
+  playUntil(p.end);
+}
+
+function showAnswer() {
+  const p = phrases[idx];
+  document.getElementById('answer-display').textContent = p.text;
+  const showRu = document.getElementById('ru-toggle').checked;
+  document.getElementById('translation-display').textContent = (showRu && p.translation_ru) ? p.translation_ru : '';
+  document.getElementById('answer-block').classList.add('visible');
+}
+
+function next() {
+  idx = (idx + 1) % phrases.length;
+  loadPhrase();
+  playUntil(phrases[idx].end);
+}
+
+function startListening() {
+  document.getElementById('start-row').style.display = 'none';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('counter').style.opacity = '1';
+  loadPhrase();
+  video.currentTime = 0;
+  playUntil(phrases[idx].end);
+
+  const msg = document.getElementById('loading-msg');
+  document.getElementById('answer-block').classList.add('visible');
+  msg.textContent = 'Подождите, видео загружается...';
+  msg.style.display = '';
+  setTimeout(() => { msg.style.display = 'none'; }, 10000);
+}
+
+// No auto-play on load
+</script>
+</body>
+</html>

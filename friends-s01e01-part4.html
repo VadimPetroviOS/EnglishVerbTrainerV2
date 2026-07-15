@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Аудирование — Verb Trainer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.25rem 3rem;
+    color: var(--blue-dark);
+    gap: 1.25rem;
+  }
+
+  header { text-align: center; }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue-label);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+  }
+
+  .counter {
+    font-size: 14px;
+    color: var(--blue-label);
+  }
+
+  /* Video */
+  video {
+    width: 100%;
+    max-width: 480px;
+    border-radius: var(--radius-card);
+    background: #000;
+    display: block;
+  }
+
+  /* Answer area */
+  .answer-block {
+    width: 100%;
+    max-width: 480px;
+    min-height: 52px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .answer-block.visible { opacity: 1; }
+
+  .answer-en {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--blue-dark);
+    line-height: 1.4;
+  }
+
+  .answer-ru {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--blue-label);
+    line-height: 1.4;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 480px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    flex: 1;
+    border-radius: var(--radius-btn);
+    padding: 13px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn-replay {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .btn-replay:hover { background: var(--blue-light); }
+
+  .btn-answer {
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+  }
+  .btn-answer:hover { background: var(--blue-light); }
+
+  .btn-next {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+  }
+  .btn-next:hover { background: var(--blue-hover); }
+  .btn-next:disabled { opacity: 0.4; cursor: default; }
+  .toggle-label { display: flex; align-items: center; cursor: pointer; }
+  .toggle-label input { display: none; }
+  .toggle-track {
+    width: 32px; height: 18px;
+    background: var(--blue-border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+  }
+  .toggle-label input:checked + .toggle-track { background: var(--blue-dark); }
+  .toggle-label input:checked + .toggle-track::after { left: 17px; }
+  .action-btn:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <button class="back-btn" onclick="location.href='friends-s01e01.html'">←</button>
+    <h1>Аудирование</h1>
+    <label class="toggle-label" title="Показывать перевод">
+      <input type="checkbox" id="ru-toggle" checked />
+      <span class="toggle-track"></span>
+    </label>
+  </div>
+</header>
+
+<div class="counter" id="counter" style="opacity:0;">1 / 137</div>
+
+<video id="video" src="https://res.cloudinary.com/ufbidw3j/video/upload/s01e01p04_f0dtfo.mp4" preload="metadata" playsinline></video>
+
+<div class="answer-block" id="answer-block">
+  <div class="answer-en" id="answer-display"></div>
+  <div class="answer-ru" id="translation-display"></div>
+  <div id="loading-msg" style="display:none;font-size:14px;color:var(--blue-label);font-style:italic;">Подождите, видео загружается...</div>
+</div>
+
+<div id="controls" style="display:none;" class="btn-row">
+  <button class="action-btn btn-replay" onclick="replay()">↺ Повторить</button>
+  <button class="action-btn btn-answer" onclick="showAnswer()">Текст</button>
+  <button class="action-btn btn-next" id="next-btn" onclick="next()">Следующее →</button>
+</div>
+
+<div id="start-row" class="btn-row" style="justify-content:center;">
+  <button class="action-btn btn-next" style="max-width:200px;" onclick="startListening()">Начать</button>
+</div>
+
+<script>
+const phrases = [
+  {
+    "start": 6.6,
+    "end": 8.0,
+    "text": "Isn't this amazing?",
+    "translation_ru": "Разве это не потрясающе?"
+  },
+  {
+    "start": 8.1,
+    "end": 10.5,
+    "text": "I mean, I have never made coffee before in my life.",
+    "translation_ru": "В смысле, я в жизни ни разу не варила кофе."
+  },
+  {
+    "start": 10.7,
+    "end": 13.2,
+    "text": "That is amazing. - Congratulations.",
+    "translation_ru": "Это потрясающе. - Поздравляю."
+  },
+  {
+    "start": 13.4,
+    "end": 18.1,
+    "text": "While you're on a roll, if you feel like you gotta make a Western omelet or something...",
+    "translation_ru": "Раз уж пошла такая полоса, если вдруг захочешь приготовить омлет \"Вестерн\" или что-то такое..."
+  },
+  {
+    "start": 21.0,
+    "end": 24.5,
+    "text": "Although, actually I'm really not that hungry this morning.",
+    "translation_ru": "Хотя, вообще-то, я сегодня утром не особо голоден."
+  },
+  {
+    "start": 25.4,
+    "end": 26.7,
+    "text": "Good morning. MONICA: Good morning.",
+    "translation_ru": "Доброе утро. МОНИКА: Доброе утро."
+  },
+  {
+    "start": 26.9,
+    "end": 28.5,
+    "text": "Morning. JOEY: Morning.",
+    "translation_ru": "Доброе утро. ДЖОУИ: Доброе утро."
+  },
+  {
+    "start": 29.4,
+    "end": 31.6,
+    "text": "Morning. JOEY: Morning, Paul.",
+    "translation_ru": "Доброе утро. ДЖОУИ: Доброе утро, Пол."
+  },
+  {
+    "start": 31.8,
+    "end": 35.0,
+    "text": "Hello, Paul. - Hi. Paul, is it?",
+    "translation_ru": "Здравствуй, Пол. - Привет. Пол, верно?"
+  },
+  {
+    "start": 39.1,
+    "end": 41.8,
+    "text": "MONICA: I had a really great time last night.",
+    "translation_ru": "МОНИКА: Мне вчера было очень хорошо."
+  },
+  {
+    "start": 42.0,
+    "end": 43.9,
+    "text": "PAUL: Thank you. Thank you so much.",
+    "translation_ru": "ПОЛ: Спасибо. Большое тебе спасибо."
+  },
+  {
+    "start": 44.6,
+    "end": 47.5,
+    "text": "We'll talk later, okay? - Yeah.",
+    "translation_ru": "Поговорим позже, ладно? - Да."
+  },
+  {
+    "start": 52.2,
+    "end": 54.0,
+    "text": "Thank you.",
+    "translation_ru": "Спасибо."
+  },
+  {
+    "start": 59.8,
+    "end": 62.6,
+    "text": "That wasn't a real date.",
+    "translation_ru": "Это не было настоящим свиданием."
+  },
+  {
+    "start": 63.3,
+    "end": 66.2,
+    "text": "What the hell do you do on a real date?",
+    "translation_ru": "Тогда что, чёрт возьми, вы делаете на настоящем свидании?"
+  },
+  {
+    "start": 67.0,
+    "end": 70.5,
+    "text": "Shut up and put my table back. JOEY: Okay.",
+    "translation_ru": "Заткнись и поставь мой стол на место. ДЖОУИ: Ладно."
+  },
+  {
+    "start": 70.7,
+    "end": 72.5,
+    "text": "All right, kids, I gotta get to work.",
+    "translation_ru": "Так, дети, мне пора на работу."
+  },
+  {
+    "start": 72.8,
+    "end": 78.3,
+    "text": "If I don't input those numbers, it doesn't make much of a difference.",
+    "translation_ru": "Если я не введу эти цифры, особо ничего не изменится."
+  },
+  {
+    "start": 81.3,
+    "end": 83.4,
+    "text": "So, like, you guys all have jobs?",
+    "translation_ru": "Так, типа, у вас у всех есть работа?"
+  },
+  {
+    "start": 84.2,
+    "end": 85.9,
+    "text": "Yeah, we all have jobs.",
+    "translation_ru": "Да, у всех нас есть работа."
+  },
+  {
+    "start": 86.1,
+    "end": 88.7,
+    "text": "See, that's how we buy stuff.",
+    "translation_ru": "Вот так мы и покупаем всякие вещи."
+  },
+  {
+    "start": 90.4,
+    "end": 91.6,
+    "text": "Yeah, I'm an actor.",
+    "translation_ru": "Да, я актёр."
+  },
+  {
+    "start": 91.9,
+    "end": 94.1,
+    "text": "Wow. Would I have seen you in anything?",
+    "translation_ru": "Ого. Я могла тебя где-нибудь видеть?"
+  },
+  {
+    "start": 94.3,
+    "end": 96.6,
+    "text": "Oh, I doubt it. Mostly regional work.",
+    "translation_ru": "О, сомневаюсь. В основном региональные постановки."
+  },
+  {
+    "start": 96.8,
+    "end": 100.4,
+    "text": "Unless you happened to catch the Wee One's production of Pinocchio.",
+    "translation_ru": "Разве что ты случайно видела постановку \"Пиноккио\" от театра \"Ви Уанс\"."
+  },
+  {
+    "start": 100.7,
+    "end": 103.2,
+    "text": "\"Look, Geppeto. I'm a real live boy.\"",
+    "translation_ru": "\"Смотри, Джеппетто. Я настоящий живой мальчик\"."
+  },
+  {
+    "start": 106.0,
+    "end": 107.7,
+    "text": "I will not take this abuse.",
+    "translation_ru": "Я не потерплю такого обращения."
+  },
+  {
+    "start": 108.0,
+    "end": 109.9,
+    "text": "You're right. I'm sorry.",
+    "translation_ru": "Ты прав. Прости."
+  },
+  {
+    "start": 110.3,
+    "end": 113.0,
+    "text": "Once I was a wooden boy A little wooden boy",
+    "translation_ru": "Когда-то я был деревянным мальчиком Маленьким деревянным мальчиком"
+  },
+  {
+    "start": 117.1,
+    "end": 119.5,
+    "text": "MONICA: So how are you doing today? Did you sleep okay?",
+    "translation_ru": "МОНИКА: Ну как ты сегодня? Хорошо спала?"
+  },
+  {
+    "start": 119.7,
+    "end": 123.0,
+    "text": "Did you talk to Barry? I can't stop smiling.",
+    "translation_ru": "Ты говорила с Барри? Я не могу перестать улыбаться."
+  },
+  {
+    "start": 123.8,
+    "end": 127.7,
+    "text": "I can see that. You look like you slept with a hanger in your mouth.",
+    "translation_ru": "Оно и видно. У тебя такой вид, будто ты спала с вешалкой во рту."
+  },
+  {
+    "start": 132.9,
+    "end": 136.4,
+    "text": "I know. He's just so...",
+    "translation_ru": "Знаю. Он просто такой..."
+  },
+  {
+    "start": 136.6,
+    "end": 138.1,
+    "text": "Remember you and Tony De Marco?",
+    "translation_ru": "Помнишь себя и Тони Де Марко?"
+  },
+  {
+    "start": 138.3,
+    "end": 142.3,
+    "text": "Oh, yeah. - Well, it's like that. With feelings.",
+    "translation_ru": "О, да. - Ну вот, это как тогда. Только с чувствами."
+  },
+  {
+    "start": 143.2,
+    "end": 144.9,
+    "text": "Oh, wow, are you in trouble!",
+    "translation_ru": "Ого, да ты попала!"
+  },
+  {
+    "start": 145.5,
+    "end": 149.3,
+    "text": "Okay, okay. I am just going to get up, go to work...",
+    "translation_ru": "Так, так. Я просто встану, пойду на работу..."
+  },
+  {
+    "start": 149.5,
+    "end": 152.2,
+    "text": "...and not think about him all day.",
+    "translation_ru": "...и целый день не буду думать о нём."
+  },
+  {
+    "start": 152.4,
+    "end": 155.3,
+    "text": "Or else I'm just gonna get up and go to work.",
+    "translation_ru": "Или же я просто встану и пойду на работу."
+  },
+  {
+    "start": 155.5,
+    "end": 157.1,
+    "text": "Oh, wish me luck! - What for?",
+    "translation_ru": "О, пожелай мне удачи! - Зачем?"
+  },
+  {
+    "start": 157.3,
+    "end": 160.6,
+    "text": "I'm gonna go get one of those job things.",
+    "translation_ru": "Пойду добывать себе одну из этих ваших работ."
+  },
+  {
+    "start": 168.6,
+    "end": 171.2,
+    "text": "Hey, Monica. - Hey, Franny. Welcome back.",
+    "translation_ru": "Привет, Моника. - Привет, Фрэнни. С возвращением."
+  },
+  {
+    "start": 171.4,
+    "end": 172.9,
+    "text": "How was Florida?",
+    "translation_ru": "Как Флорида?"
+  },
+  {
+    "start": 173.1,
+    "end": 174.4,
+    "text": "You had sex, didn't you?",
+    "translation_ru": "Ты занималась сексом, да?"
+  },
+  {
+    "start": 176.3,
+    "end": 177.3,
+    "text": "How do you do that?",
+    "translation_ru": "Как ты это делаешь?"
+  },
+  {
+    "start": 178.4,
+    "end": 182.2,
+    "text": "So, who? - You know Paul?",
+    "translation_ru": "Так, и с кем? - Ты знаешь Пола?"
+  },
+  {
+    "start": 182.8,
+    "end": 184.4,
+    "text": "Paul, the wine guy?",
+    "translation_ru": "Пол, винный парень?"
+  },
+  {
+    "start": 184.5,
+    "end": 186.1,
+    "text": "Oh, yeah, I know Paul.",
+    "translation_ru": "О да, я знаю Пола."
+  },
+  {
+    "start": 188.7,
+    "end": 191.2,
+    "text": "You mean, you know Paul like I know Paul?",
+    "translation_ru": "То есть, ты знаешь Пола так же, как я знаю Пола?"
+  },
+  {
+    "start": 191.4,
+    "end": 193.7,
+    "text": "Are you kidding? I take credit for Paul.",
+    "translation_ru": "Ты шутишь? Это моя заслуга — этот Пол."
+  },
+  {
+    "start": 193.8,
+    "end": 198.0,
+    "text": "Before me, there was no snap in his turtle for two years.",
+    "translation_ru": "До меня у него два года ничего не получалось, если ты понимаешь, о чём я."
+  },
+  {
+    "start": 201.2,
+    "end": 203.8,
+    "text": "Of course it was a line.",
+    "translation_ru": "Конечно, это была подкатка."
+  },
+  {
+    "start": 204.2,
+    "end": 206.8,
+    "text": "Why? Why would anybody do something like that?",
+    "translation_ru": "Зачем? Зачем кому-то делать такое?"
+  },
+  {
+    "start": 207.1,
+    "end": 210.3,
+    "text": "We're looking for an answer more sophisticated than:",
+    "translation_ru": "Мы ищем ответ чуть более замысловатый, чем:"
+  },
+  {
+    "start": 210.5,
+    "end": 212.4,
+    "text": "\"To get you into bed.\"",
+    "translation_ru": "\"Чтобы затащить тебя в постель\"."
+  },
+  {
+    "start": 213.4,
+    "end": 215.0,
+    "text": "Is it me?",
+    "translation_ru": "Дело во мне?"
+  },
+  {
+    "start": 215.2,
+    "end": 218.7,
+    "text": "Is it like I have some sort of beacon that only dogs...",
+    "translation_ru": "У меня что, есть какой-то маячок, который слышат только собаки..."
+  },
+  {
+    "start": 218.9,
+    "end": 221.5,
+    "text": "...and men with severe emotional problems can hear?",
+    "translation_ru": "...и мужчины с серьёзными эмоциональными проблемами?"
+  },
+  {
+    "start": 221.7,
+    "end": 223.7,
+    "text": "All right, come here. Give me your feet.",
+    "translation_ru": "Так, иди сюда. Дай мне свои ноги."
+  },
+  {
+    "start": 231.2,
+    "end": 233.0,
+    "text": "I just thought he was nice, you know?",
+    "translation_ru": "Я просто подумала, что он милый, понимаешь?"
+  },
+  {
+    "start": 235.9,
+    "end": 238.3,
+    "text": "I can't believe you didn't know it was a line.",
+    "translation_ru": "Не могу поверить, что ты не поняла, что это была подкатка."
+  },
+  {
+    "start": 243.2,
+    "end": 244.3,
+    "text": "Guess what.",
+    "translation_ru": "Угадай что."
+  },
+  {
+    "start": 244.4,
+    "end": 246.2,
+    "text": "You got a job? - Are you kidding?",
+    "translation_ru": "Ты нашла работу? - Ты шутишь?"
+  },
+  {
+    "start": 246.4,
+    "end": 248.1,
+    "text": "I'm trained for nothing.",
+    "translation_ru": "Меня ничему не обучали."
+  },
+  {
+    "start": 249.9,
+    "end": 251.9,
+    "text": "I was laughed out of 12 interviews today.",
+    "translation_ru": "Сегодня меня со смехом выгнали с 12 собеседований."
+  },
+  {
+    "start": 252.1,
+    "end": 253.6,
+    "text": "Yet you're surprisingly upbeat.",
+    "translation_ru": "И всё же ты на удивление в хорошем настроении."
+  },
+  {
+    "start": 253.9,
+    "end": 257.4,
+    "text": "Well, you would be too if you found Joan and David boots on sale...",
+    "translation_ru": "Ну, ты бы тоже была в хорошем настроении, если бы нашла на распродаже сапоги Joan and David..."
+  },
+  {
+    "start": 257.5,
+    "end": 259.3,
+    "text": "...50 percent off.",
+    "translation_ru": "...со скидкой 50 процентов."
+  },
+  {
+    "start": 259.5,
+    "end": 261.3,
+    "text": "Oh, how well you know me.",
+    "translation_ru": "О, как же хорошо ты меня знаешь."
+  },
+  {
+    "start": 262.9,
+    "end": 265.4,
+    "text": "They're my new \"I don't need a job or my parents.",
+    "translation_ru": "Это мои новые сапоги \"Мне не нужна работа и родители."
+  },
+  {
+    "start": 265.6,
+    "end": 267.8,
+    "text": "I've got great boots\" boots.",
+    "translation_ru": "У меня классные сапоги\" сапоги."
+  },
+  {
+    "start": 269.2,
+    "end": 271.4,
+    "text": "How'd you pay for them? - Uh, credit card.",
+    "translation_ru": "Как ты за них расплатилась? - Э-э, кредиткой."
+  },
+  {
+    "start": 271.9,
+    "end": 273.6,
+    "text": "And who pays for that?",
+    "translation_ru": "А кто платит по кредитке?"
+  },
+  {
+    "start": 274.2,
+    "end": 276.3,
+    "text": "Um, my father.",
+    "translation_ru": "Э-э, мой отец."
+  },
+  {
+    "start": 278.9,
+    "end": 281.1,
+    "text": "You can't live off your parents your whole life.",
+    "translation_ru": "Ты не можешь всю жизнь жить за счёт родителей."
+  },
+  {
+    "start": 281.3,
+    "end": 285.0,
+    "text": "I know that. That's why I was getting married.",
+    "translation_ru": "Я знаю. Именно поэтому я и собиралась замуж."
+  },
+  {
+    "start": 285.3,
+    "end": 288.3,
+    "text": "Give her a break. It's hard being on your own for the first time.",
+    "translation_ru": "Отстань от неё. Тяжело в первый раз быть самостоятельной."
+  },
+  {
+    "start": 288.5,
+    "end": 290.0,
+    "text": "Thank you. - You're welcome.",
+    "translation_ru": "Спасибо. - Пожалуйста."
+  },
+  {
+    "start": 290.2,
+    "end": 292.9,
+    "text": "I remember when I first came to this city, I was 14.",
+    "translation_ru": "Помню, когда я впервые приехала в этот город, мне было 14."
+  },
+  {
+    "start": 293.1,
+    "end": 295.9,
+    "text": "My mom had killed herself and my stepdad was back in prison.",
+    "translation_ru": "Моя мама покончила с собой, а отчим снова сел в тюрьму."
+  },
+  {
+    "start": 296.1,
+    "end": 298.1,
+    "text": "And I got here, and I didn't know anybody.",
+    "translation_ru": "Я приехала сюда и никого не знала."
+  },
+  {
+    "start": 298.3,
+    "end": 301.7,
+    "text": "I ended up living with this albino guy who was cleaning windshields...",
+    "translation_ru": "В итоге я жила с одним парнем-альбиносом, который мыл лобовые стёкла..."
+  },
+  {
+    "start": 301.9,
+    "end": 305.7,
+    "text": "...outside Port Authority. And then he killed himself.",
+    "translation_ru": "...у автовокзала Port Authority. А потом он покончил с собой."
+  },
+  {
+    "start": 306.4,
+    "end": 310.2,
+    "text": "And then I found aromatherapy. So believe me, I know exactly how you feel.",
+    "translation_ru": "А потом я открыла для себя ароматерапию. Так что поверь, я прекрасно понимаю, что ты сейчас чувствуешь."
+  },
+  {
+    "start": 314.4,
+    "end": 317.1,
+    "text": "The word you're looking for is:",
+    "translation_ru": "Слово, которое ты ищешь:"
+  },
+  {
+    "start": 317.7,
+    "end": 319.0,
+    "text": "\"Anyway...\"",
+    "translation_ru": "\"В общем...\""
+  },
+  {
+    "start": 323.1,
+    "end": 324.3,
+    "text": "All right. You ready?",
+    "translation_ru": "Так. Готова?"
+  },
+  {
+    "start": 324.4,
+    "end": 326.1,
+    "text": "I don't think so. ROSS: Oh, come on.",
+    "translation_ru": "Не думаю. РОСС: Да ладно тебе."
+  },
+  {
+    "start": 326.5,
+    "end": 327.9,
+    "text": "Cut. Cut.",
+    "translation_ru": "Снято. Снято."
+  },
+  {
+    "start": 328.1,
+    "end": 331.1,
+    "text": "ALL: Cut, cut, cut.",
+    "translation_ru": "ВСЕ: Снято, снято, снято."
+  },
+  {
+    "start": 332.7,
+    "end": 335.6,
+    "text": "ROSS: Hey. MONICA: All right.",
+    "translation_ru": "РОСС: Привет. МОНИКА: Ну вот."
+  },
+  {
+    "start": 335.9,
+    "end": 337.6,
+    "text": "Welcome to the real world.",
+    "translation_ru": "Добро пожаловать в реальный мир."
+  },
+  {
+    "start": 337.8,
+    "end": 340.5,
+    "text": "It sucks. You're gonna love it.",
+    "translation_ru": "Он паршивый. Тебе понравится."
+  },
+  {
+    "start": 341.4,
+    "end": 343.5,
+    "text": "[FRANCIS SCOTT KEY'S \"STAR-SPANGLED BANNER\" PLAYS ON TV]",
+    "translation_ru": "[ПО ТЕЛЕВИЗОРУ ЗВУЧИТ ГИМН США \"ЗВЁЗДНО-ПОЛОСАТОЕ ЗНАМЯ\"]"
+  },
+  {
+    "start": 347.4,
+    "end": 350.8,
+    "text": "Well, that's it. You gonna crash on the couch?",
+    "translation_ru": "Ну, вот и всё. Останешься спать на диване?"
+  },
+  {
+    "start": 351.0,
+    "end": 354.3,
+    "text": "No. No, I gotta go home sometime. - Are you gonna be okay?",
+    "translation_ru": "Нет. Нет, мне же когда-то придётся пойти домой. - Ты справишься?"
+  },
+  {
+    "start": 354.5,
+    "end": 356.0,
+    "text": "Yeah.",
+    "translation_ru": "Да."
+  },
+  {
+    "start": 357.0,
+    "end": 358.9,
+    "text": "Look what I just found on the floor.",
+    "translation_ru": "Смотри, что я только что нашла на полу."
+  },
+  {
+    "start": 361.2,
+    "end": 362.5,
+    "text": "What?",
+    "translation_ru": "Что?"
+  },
+  {
+    "start": 362.9,
+    "end": 364.4,
+    "text": "That's Paul's watch.",
+    "translation_ru": "Это часы Пола."
+  },
+  {
+    "start": 364.6,
+    "end": 366.7,
+    "text": "You can just put it back where you found it.",
+    "translation_ru": "Можешь просто положить их туда, где нашла."
+  },
+  {
+    "start": 368.3,
+    "end": 371.8,
+    "text": "Oh, boy. All right. Good night, everybody.",
+    "translation_ru": "Ох, ну и дела. Ладно. Спокойной ночи всем."
+  },
+  {
+    "start": 371.9,
+    "end": 373.0,
+    "text": "ROSS & RACHEL: Good night.",
+    "translation_ru": "РОСС и РЕЙЧЕЛ: Спокойной ночи."
+  },
+  {
+    "start": 381.5,
+    "end": 383.1,
+    "text": "Hmm. - Hmm.",
+    "translation_ru": "Хм. - Хм."
+  },
+  {
+    "start": 384.3,
+    "end": 385.5,
+    "text": "Oh, sorry. - No. Oh, no. Go.",
+    "translation_ru": "Ой, прости. - Нет-нет. Давай, ешь."
+  },
+  {
+    "start": 385.7,
+    "end": 387.7,
+    "text": "No, have it, really. - Split it?",
+    "translation_ru": "Нет, правда, бери себе. - Поделим?"
+  },
+  {
+    "start": 387.8,
+    "end": 389.8,
+    "text": "Okay. - Okay.",
+    "translation_ru": "Хорошо. - Хорошо."
+  },
+  {
+    "start": 391.7,
+    "end": 392.8,
+    "text": "Thanks.",
+    "translation_ru": "Спасибо."
+  },
+  {
+    "start": 393.5,
+    "end": 397.1,
+    "text": "You probably didn't know this, but back in high school I had...",
+    "translation_ru": "Ты, наверное, не знал, но ещё в школе я..."
+  },
+  {
+    "start": 397.2,
+    "end": 399.1,
+    "text": "...a major crush on you.",
+    "translation_ru": "...была по уши в тебя влюблена."
+  },
+  {
+    "start": 400.5,
+    "end": 401.7,
+    "text": "I knew.",
+    "translation_ru": "Я знал."
+  },
+  {
+    "start": 402.1,
+    "end": 404.3,
+    "text": "You did? Oh.",
+    "translation_ru": "Знал? Ой."
+  },
+  {
+    "start": 405.1,
+    "end": 408.1,
+    "text": "I figured you thought I was Monica's geeky older brother.",
+    "translation_ru": "Я думал, ты считала меня занудным старшим братом Моники."
+  },
+  {
+    "start": 408.9,
+    "end": 410.9,
+    "text": "I did. - Oh.",
+    "translation_ru": "Так и было. - Ох."
+  },
+  {
+    "start": 415.5,
+    "end": 417.3,
+    "text": "Listen, do you think...",
+    "translation_ru": "Слушай, как думаешь..."
+  },
+  {
+    "start": 417.5,
+    "end": 421.0,
+    "text": "And try not to let my vulnerability become any kind of a factor here.",
+    "translation_ru": "И постарайся не учитывать мою уязвимость в этой ситуации."
+  },
+  {
+    "start": 423.1,
+    "end": 427.0,
+    "text": "Do you think it would be okay if I ask you out sometime, maybe?",
+    "translation_ru": "Как думаешь, было бы нормально, если бы я пригласил тебя куда-нибудь, может быть?"
+  },
+  {
+    "start": 428.2,
+    "end": 430.1,
+    "text": "Yeah.",
+    "translation_ru": "Да."
+  },
+  {
+    "start": 430.5,
+    "end": 431.8,
+    "text": "Maybe.",
+    "translation_ru": "Может быть."
+  },
+  {
+    "start": 432.8,
+    "end": 434.7,
+    "text": "Okay.",
+    "translation_ru": "Хорошо."
+  },
+  {
+    "start": 439.4,
+    "end": 441.9,
+    "text": "Okay, maybe I will.",
+    "translation_ru": "Ладно, может, я так и сделаю."
+  },
+  {
+    "start": 445.8,
+    "end": 448.0,
+    "text": "Good night. - Good night.",
+    "translation_ru": "Спокойной ночи. - Спокойной ночи."
+  },
+  {
+    "start": 461.5,
+    "end": 463.2,
+    "text": "See you.",
+    "translation_ru": "Увидимся."
+  },
+  {
+    "start": 463.7,
+    "end": 464.8,
+    "text": "ROSS: Mm-hm.",
+    "translation_ru": "РОСС: Ага."
+  },
+  {
+    "start": 464.9,
+    "end": 467.4,
+    "text": "Wait, wait. Hey, what's with you?",
+    "translation_ru": "Погоди, погоди. Эй, что с тобой?"
+  },
+  {
+    "start": 469.7,
+    "end": 472.3,
+    "text": "I just grabbed a spoon.",
+    "translation_ru": "Я только что взял ложку."
+  },
+  {
+    "start": 480.5,
+    "end": 482.0,
+    "text": "Can't believe what I'm hearing.",
+    "translation_ru": "Не могу поверить в то, что слышу."
+  },
+  {
+    "start": 482.2,
+    "end": 483.9,
+    "text": "I can't believe What I'm hearing here",
+    "translation_ru": "Не могу поверить В то, что слышу здесь"
+  },
+  {
+    "start": 484.0,
+    "end": 486.2,
+    "text": "What? I said you had... - What? I said you had...",
+    "translation_ru": "Что? Я сказал, у тебя есть... - Что? Я сказал, у тебя есть..."
+  },
+  {
+    "start": 487.3,
+    "end": 489.8,
+    "text": "Would you stop? - Oh, was I doing it again?",
+    "translation_ru": "Может, хватит? - Ой, я опять это делаю?"
+  },
+  {
+    "start": 490.0,
+    "end": 491.8,
+    "text": "ALL: Yes.",
+    "translation_ru": "ВСЕ: Да."
+  },
+  {
+    "start": 492.8,
+    "end": 494.8,
+    "text": "WOMAN: Would anybody like more coffee?",
+    "translation_ru": "ЖЕНЩИНА: Кому-нибудь ещё кофе?"
+  },
+  {
+    "start": 496.7,
+    "end": 499.2,
+    "text": "Did you make it or are you just serving it?",
+    "translation_ru": "Ты его сварила, или только разносишь?"
+  },
+  {
+    "start": 499.3,
+    "end": 502.6,
+    "text": "I'm just serving it. CHANDLER: I'll have a cup of coffee.",
+    "translation_ru": "Я его только разношу. ЧЕНДЛЕР: Мне чашечку кофе."
+  },
+  {
+    "start": 503.1,
+    "end": 504.4,
+    "text": "Kids, new dream.",
+    "translation_ru": "Ребят, новый сон."
+  },
+  {
+    "start": 505.1,
+    "end": 508.4,
+    "text": "I'm in Las Vegas. I'm Liza Minnelli.",
+    "translation_ru": "Я в Лас-Вегасе. Я — Лайза Минелли."
+  },
+  {
+    "start": 505.0,
+    "end": 510.0,
+    "text": "",
+    "translation_ru": ""
+  }
+];
+
+let idx = 0;
+let checkInterval = null;
+
+const video = document.getElementById('video');
+
+function playClip(start, end) {
+  if (checkInterval) clearInterval(checkInterval);
+  video.currentTime = start;
+  video.play();
+  checkInterval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      clearInterval(checkInterval);
+      checkInterval = null;
+    }
+  }, 50);
+}
+
+function loadPhrase() {
+  document.getElementById('counter').textContent = `${idx + 1} / ${phrases.length}`;
+  document.getElementById('answer-block').classList.remove('visible');
+  document.getElementById('answer-display').textContent = '';
+  document.getElementById('translation-display').textContent = '';
+}
+
+function stopCheck() {
+  if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+}
+
+function playUntil(end) {
+  stopCheck();
+  const nextBtn = document.getElementById('next-btn');
+  if (nextBtn) nextBtn.disabled = true;
+  video.play();
+  checkInterval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      stopCheck();
+      if (nextBtn) nextBtn.disabled = false;
+    }
+  }, 50);
+}
+
+function replay() {
+  const p = phrases[idx];
+  stopCheck();
+  document.getElementById('loading-msg').style.display = 'none';
+  video.currentTime = p.start;
+  playUntil(p.end);
+}
+
+function showAnswer() {
+  const p = phrases[idx];
+  document.getElementById('answer-display').textContent = p.text;
+  const showRu = document.getElementById('ru-toggle').checked;
+  document.getElementById('translation-display').textContent = (showRu && p.translation_ru) ? p.translation_ru : '';
+  document.getElementById('answer-block').classList.add('visible');
+}
+
+function next() {
+  idx = (idx + 1) % phrases.length;
+  loadPhrase();
+  playUntil(phrases[idx].end);
+}
+
+function startListening() {
+  document.getElementById('start-row').style.display = 'none';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('counter').style.opacity = '1';
+  loadPhrase();
+  video.currentTime = 0;
+  playUntil(phrases[idx].end);
+
+  const msg = document.getElementById('loading-msg');
+  document.getElementById('answer-block').classList.add('visible');
+  msg.textContent = 'Подождите, видео загружается...';
+  msg.style.display = '';
+  setTimeout(() => { msg.style.display = 'none'; }, 10000);
+}
+
+// No auto-play on load
+</script>
+</body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Говорение</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    color: var(--blue-dark);
+  }
+
+  /* TOPICS SCREEN */
+  #topics-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2.5rem 1.25rem;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .header-row {
+    display: flex; align-items: center;
+    justify-content: center; gap: 8px;
+  }
+  .back-btn {
+    background: none; border: none;
+    font-size: 20px; color: var(--blue-label);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+  h1 { font-size: 20px; font-weight: 600; color: var(--blue-dark); }
+  .subtitle { font-size: 13px; color: var(--blue-label); }
+
+  .topics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .topic-btn {
+    padding: 18px 12px;
+    border-radius: var(--radius-card);
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .topic-btn:hover { background: var(--blue-hover); }
+  .topic-btn:active { transform: scale(0.97); }
+
+  /* CHAT SCREEN */
+  #chat-screen {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    margin: 0 auto;
+  }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--blue-border);
+    background: var(--bg);
+  }
+  .chat-title { font-size: 16px; font-weight: 600; color: var(--blue-dark); }
+  .chat-count { font-size: 12px; color: var(--blue-label); margin-left: auto; }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .msg {
+    max-width: 80%;
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .msg-bot {
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg-user {
+    background: var(--blue-dark);
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-translate-btn {
+    background: none;
+    border: none;
+    color: var(--blue-label);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 0 0 0;
+    display: block;
+    text-decoration: underline;
+    font-family: inherit;
+  }
+  .msg-translation {
+    font-size: 13px;
+    color: var(--blue-label);
+    font-style: italic;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .toggle-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--blue-label); }
+  .toggle-label input { display: none; }
+  .toggle-track {
+    width: 32px; height: 18px;
+    background: var(--blue-border);
+    border-radius: 9px; position: relative; transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: ''; position: absolute;
+    width: 12px; height: 12px; background: #fff;
+    border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle-label input:checked + .toggle-track { background: var(--blue-dark); }
+  .toggle-label input:checked + .toggle-track::after { left: 17px; }
+
+  .mic-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: none;
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+    font-size: 20px; cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0; display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+  }
+  .mic-btn:hover { background: var(--blue-hover); }
+  .mic-btn.recording { background: #fde8e8; border-color: #c0392b; }
+
+  .chat-done {
+    text-align: center;
+    padding: 16px;
+    font-size: 15px;
+    color: var(--blue-label);
+    font-style: italic;
+  }
+
+  /* Input */
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--blue-border);
+    background: var(--bg);
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid var(--blue-border);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--blue-dark);
+    outline: none;
+    background: #fff;
+  }
+  .chat-input:focus { border-color: var(--blue-dark); }
+
+  .send-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--blue-dark);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: #22618c; }
+  .send-btn:disabled { opacity: 0.4; cursor: default; }
+</style>
+</head>
+<body>
+
+<!-- TOPICS SCREEN -->
+<div id="topics-screen">
+  <div>
+    <div class="header-row">
+      <button class="back-btn" onclick="location.href='index.html'">←</button>
+      <h1>Говорение</h1>
+      <label class="toggle-label" title="Голосовой режим">
+        🎤
+        <input type="checkbox" id="voice-toggle" onchange="toggleVoiceMode()" />
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div class="subtitle" style="text-align:center;margin-top:6px;">Выберите тему</div>
+  </div>
+  <div class="topics-grid">
+    <button class="topic-btn" onclick="startChat('Знакомство', 'Meeting people')">👋 Знакомство</button>
+    <button class="topic-btn" onclick="startChat('Семья', 'Family')">👨‍👩‍👧 Семья</button>
+    <button class="topic-btn" onclick="startChat('Работа', 'Work and job')">💼 Работа</button>
+    <button class="topic-btn" onclick="startChat('Еда', 'Food and restaurants')">🍕 Еда</button>
+    <button class="topic-btn" onclick="startChat('Свободное время', 'Free time and hobbies')">🎮 Хобби</button>
+    <button class="topic-btn" onclick="startChat('Погода', 'Weather')">☀️ Погода</button>
+    <button class="topic-btn" onclick="startChat('Город', 'City and transport')">🏙️ Город</button>
+    <button class="topic-btn" onclick="startChat('Покупки', 'Shopping')">🛍️ Покупки</button>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div id="chat-screen">
+  <div class="chat-header">
+    <button class="back-btn" onclick="backToTopics()">←</button>
+    <div class="chat-title" id="chat-title">Знакомство</div>
+    <div class="chat-count" id="chat-count">0 / 20</div>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chat-input" type="text" placeholder="Напишите ответ..." autocomplete="off" />
+    <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">🎤</button>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+  </div>
+</div>
+
+<script>
+// Decrypt API key
+function decrypt(enc, salt) {
+  const bytes = atob(enc).split('').map((c, i) =>
+    String.fromCharCode(c.charCodeAt(0) ^ salt.charCodeAt(i % salt.length))
+  );
+  return bytes.join('');
+}
+const API_KEY = decrypt("EQdZb1dxHAMcJRUCZEZIejk0LiUBNkJ8ZXMXGA5HMC1xdgpkHwslBRInSHhbYEASWBgsQEZnUAU=", "vt2024salt");
+
+let voiceMode = false;
+let recognition = null;
+let isRecording = false;
+
+let history = [];
+let questionCount = 0;
+let currentTopic = '';
+const MAX_QUESTIONS = 20;
+
+function toggleVoiceMode() {
+  voiceMode = document.getElementById('voice-toggle').checked;
+  const input = document.getElementById('chat-input');
+  const micBtn = document.getElementById('mic-btn');
+  const sendBtn = document.getElementById('send-btn');
+
+  if (voiceMode) {
+    input.style.display = 'none';
+    micBtn.style.display = 'flex';
+    sendBtn.style.display = 'none';
+  } else {
+    input.style.display = '';
+    micBtn.style.display = 'none';
+    sendBtn.style.display = '';
+    stopRecording();
+  }
+}
+
+function speak(text) {
+  if (!voiceMode) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.9;
+  // Try to find a good English voice
+  const voices = window.speechSynthesis.getVoices();
+  const engVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
+    || voices.find(v => v.lang.startsWith('en'));
+  if (engVoice) utterance.voice = engVoice;
+  window.speechSynthesis.speak(utterance);
+}
+
+function toggleRecording() {
+  if (isRecording) {
+    stopRecording();
+    // Send whatever is in the input
+    if (document.getElementById('chat-input').value.trim()) {
+      sendMessage();
+    }
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Распознавание речи не поддерживается в этом браузере. Попробуй Chrome.');
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-btn').textContent = '⏹';
+    document.getElementById('chat-input').value = '';
+    document.getElementById('chat-input').placeholder = 'Говорите...';
+  };
+
+  recognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    document.getElementById('chat-input').value = transcript;
+  };
+
+  recognition.onerror = () => stopRecording();
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-btn').textContent = '🎤';
+  document.getElementById('chat-input').placeholder = 'Говорите...';
+}
+
+
+
+function startChat(topicRu, topicEn) {
+  currentTopic = topicRu;
+  history = [];
+  questionCount = 0;
+
+  document.getElementById('topics-screen').style.display = 'none';
+  document.getElementById('chat-screen').style.display = 'flex';
+  document.getElementById('chat-title').textContent = topicRu;
+  document.getElementById('chat-count').textContent = `0 / ${MAX_QUESTIONS}`;
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-input').value = '';
+
+  const systemPrompt = `You are a friendly English conversation partner helping a Russian-speaking student practice English at A2 level. Topic: "${topicEn}".
+
+STRICT RULES:
+- Ask ONLY ONE question per message. Never ask two questions at once.
+- Keep sentences short and simple (A2 level).
+- After the student answers, first check for grammar errors. Then react briefly and ask ONE new question.
+- Always end your message with EXACTLY ONE question.
+
+FORMAT — always follow this exact format:
+If the student made a grammar mistake:
+CORRECTION: [corrected sentence]
+REASON: [short explanation in Russian, 1 sentence]
+[Your reaction + question in English]
+RU: [Russian translation of your reaction + question]
+
+If no mistake:
+[Your reaction + question in English]
+RU: [Russian translation]
+
+Example with mistake:
+CORRECTION: I am from Russia.
+REASON: После местоимения «I» нужен глагол «am».
+Oh, Russia! That's so interesting. Is this your first time here?
+RU: О, Россия! Это очень интересно. Ты здесь впервые?
+
+Example without mistake:
+Great! What do you do for work?
+RU: Отлично! Чем ты занимаешься по работе?
+
+- After exactly ${MAX_QUESTIONS} student replies, say goodbye warmly and stop.
+- Start now with a greeting and ONE question (no correction needed for the first message).`;
+
+  history.push({ role: "system", content: systemPrompt });
+  sendToGroq();
+}
+
+function backToTopics() {
+  window.speechSynthesis.cancel();
+  stopRecording();
+  document.getElementById('chat-screen').style.display = 'none';
+  document.getElementById('topics-screen').style.display = 'flex';
+  // Sync input UI with current voiceMode state
+  toggleVoiceMode();
+}
+
+function addCorrectionCard(correction, reason) {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.style.cssText = 'max-width:80%;align-self:flex-start;background:#fffbe6;border:1.5px solid #f0c040;border-radius:16px;padding:12px 14px;font-size:14px;line-height:1.5;';
+
+  const label = document.createElement('div');
+  label.style.cssText = 'font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#b07d00;margin-bottom:8px;';
+  label.textContent = 'Небольшая правка';
+  div.appendChild(label);
+
+  const corrEl = document.createElement('div');
+  corrEl.style.cssText = 'background:#fff;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:14px;color:#1a4d70;margin-bottom:8px;';
+  corrEl.textContent = correction;
+  div.appendChild(corrEl);
+
+  if (reason) {
+    const reasonEl = document.createElement('div');
+    reasonEl.style.cssText = 'color:#5a5a5a;font-size:13px;';
+    reasonEl.textContent = reason;
+    div.appendChild(reasonEl);
+  }
+
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addBotMessage(text, translation) {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-bot';
+
+  const textEl = document.createElement('div');
+  textEl.textContent = text;
+  div.appendChild(textEl);
+
+  if (translation) {
+    const btn = document.createElement('button');
+    btn.className = 'msg-translate-btn';
+    btn.textContent = 'перевод';
+    const tr = document.createElement('div');
+    tr.className = 'msg-translation';
+    tr.textContent = translation;
+    btn.onclick = () => {
+      tr.style.display = tr.style.display === 'none' ? 'block' : 'none';
+      btn.textContent = tr.style.display === 'none' ? 'перевод' : 'скрыть';
+    };
+    div.appendChild(btn);
+    div.appendChild(tr);
+  }
+
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-user';
+  div.textContent = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addLoading() {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-loading';
+  div.id = 'loading-msg';
+  div.textContent = '...';
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeLoading() {
+  const el = document.getElementById('loading-msg');
+  if (el) el.remove();
+}
+
+function parseResponse(text) {
+  const normalized = text.replace(/\\n/g, '\n');
+  let correction = null;
+  let reason = null;
+  let main = normalized;
+
+  // Extract CORRECTION
+  const corrMatch = normalized.match(/^CORRECTION:\s*(.+)$/m);
+  if (corrMatch) correction = corrMatch[1].trim();
+
+  // Extract REASON
+  const reasonMatch = normalized.match(/^REASON:\s*(.+)$/m);
+  if (reasonMatch) reason = reasonMatch[1].trim();
+
+  // Remove CORRECTION and REASON lines from main
+  main = normalized
+    .replace(/^CORRECTION:.*$/m, '')
+    .replace(/^REASON:.*$/m, '')
+    .trim();
+
+  // Extract RU translation
+  const ruIndex = main.lastIndexOf('\nRU:');
+  let en = main;
+  let ru = '';
+  if (ruIndex !== -1) {
+    en = main.slice(0, ruIndex).trim();
+    ru = main.slice(ruIndex + 4).trim();
+  }
+
+  return { en, ru, correction, reason };
+}
+
+async function sendToGroq() {
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('chat-input').disabled = true;
+  addLoading();
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: history,
+        max_tokens: 300,
+        temperature: 0.7
+      })
+    });
+
+    const data = await res.json();
+    const reply = data.choices[0].message.content;
+    history.push({ role: 'assistant', content: reply });
+
+    removeLoading();
+    const { en, ru, correction, reason } = parseResponse(reply);
+    if (correction) addCorrectionCard(correction, reason);
+    addBotMessage(en, ru);
+    speak(en);
+
+    if (questionCount >= MAX_QUESTIONS) {
+      document.getElementById('chat-input').disabled = true;
+      document.getElementById('send-btn').disabled = true;
+    } else {
+      document.getElementById('chat-input').disabled = false;
+      document.getElementById('send-btn').disabled = false;
+      document.getElementById('chat-input').focus();
+    }
+  } catch (e) {
+    removeLoading();
+    addBotMessage('Ошибка соединения. Попробуй ещё раз.', '');
+    document.getElementById('chat-input').disabled = false;
+    document.getElementById('send-btn').disabled = false;
+  }
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  addUserMessage(text);
+  history.push({ role: 'user', content: text });
+  questionCount++;
+  document.getElementById('chat-count').textContent = `${questionCount} / ${MAX_QUESTIONS}`;
+
+  sendToGroq();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+});
+</script>
+</body>
+</html>

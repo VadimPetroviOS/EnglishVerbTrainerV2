@@ -182,6 +182,66 @@
   }
   .mic-btn:hover { background: var(--blue-hover); }
   .mic-btn.recording { background: #fde8e8; border-color: #c0392b; }
+  .mic-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* VOICE SCREEN */
+  .voice-screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 24px;
+  }
+
+  .voice-orb {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--blue-light);
+    border: 2px solid var(--blue-border);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .voice-orb.speaking {
+    background: var(--blue-dark);
+    border-color: var(--blue-dark);
+    animation: orb-pulse 1.2s ease-in-out infinite;
+  }
+  .voice-orb.listening {
+    background: #fde8e8;
+    border-color: #c0392b;
+    animation: orb-pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes orb-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.12); opacity: 0.75; }
+  }
+
+  .voice-reveal-btn {
+    background: none;
+    border: 1.5px solid var(--blue-border);
+    border-radius: var(--radius-btn);
+    color: var(--blue-label);
+    font-size: 13px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .voice-reveal-btn:hover { background: var(--blue-hover); }
+
+  .voice-reveal-text {
+    max-width: 320px;
+    text-align: center;
+    font-size: 15px;
+    color: var(--blue-dark);
+    line-height: 1.5;
+  }
+  .voice-reveal-ru {
+    font-size: 13px;
+    color: var(--blue-label);
+    font-style: italic;
+    margin-top: 6px;
+  }
 
   .chat-done {
     text-align: center;
@@ -264,6 +324,14 @@
     <div class="chat-count" id="chat-count">0 / 20</div>
   </div>
   <div class="chat-messages" id="chat-messages"></div>
+  <div class="voice-screen" id="voice-screen">
+    <div class="voice-orb" id="voice-orb"></div>
+    <button class="voice-reveal-btn" id="voice-reveal-btn" onclick="toggleVoiceReveal()">Показать фразу бота</button>
+    <div class="voice-reveal-text" id="voice-reveal-text" style="display:none;">
+      <div id="voice-reveal-en"></div>
+      <div class="voice-reveal-ru" id="voice-reveal-ru"></div>
+    </div>
+  </div>
   <div class="chat-input-row">
     <input class="chat-input" id="chat-input" type="text" placeholder="Напишите ответ..." autocomplete="off" />
     <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">🎤</button>
@@ -288,28 +356,66 @@ let isRecording = false;
 let history = [];
 let questionCount = 0;
 let currentTopic = '';
+let lastBotEn = '';
+let lastBotRu = '';
 const MAX_QUESTIONS = 20;
 
-function toggleVoiceMode() {
-  voiceMode = document.getElementById('voice-toggle').checked;
+function applyVoiceUI() {
   const input = document.getElementById('chat-input');
   const micBtn = document.getElementById('mic-btn');
   const sendBtn = document.getElementById('send-btn');
+  const chatMessages = document.getElementById('chat-messages');
+  const voiceScreen = document.getElementById('voice-screen');
 
   if (voiceMode) {
     input.style.display = 'none';
     micBtn.style.display = 'flex';
     sendBtn.style.display = 'none';
+    chatMessages.style.display = 'none';
+    voiceScreen.style.display = 'flex';
   } else {
     input.style.display = '';
     micBtn.style.display = 'none';
     sendBtn.style.display = '';
+    chatMessages.style.display = '';
+    voiceScreen.style.display = 'none';
+  }
+}
+
+function toggleVoiceMode() {
+  voiceMode = document.getElementById('voice-toggle').checked;
+  applyVoiceUI();
+  if (voiceMode) {
+    setVoiceOrbState(null);
+    updateVoiceReveal();
+  } else {
     stopRecording();
   }
 }
 
-function speak(text) {
-  if (!voiceMode) return;
+function setVoiceOrbState(state) {
+  const orb = document.getElementById('voice-orb');
+  orb.classList.remove('speaking', 'listening');
+  if (state) orb.classList.add(state);
+}
+
+function updateVoiceReveal() {
+  document.getElementById('voice-reveal-en').textContent = lastBotEn;
+  document.getElementById('voice-reveal-ru').textContent = lastBotRu;
+  document.getElementById('voice-reveal-text').style.display = 'none';
+  document.getElementById('voice-reveal-btn').textContent = 'Показать фразу бота';
+}
+
+function toggleVoiceReveal() {
+  const box = document.getElementById('voice-reveal-text');
+  const btn = document.getElementById('voice-reveal-btn');
+  const showing = box.style.display !== 'none';
+  box.style.display = showing ? 'none' : 'block';
+  btn.textContent = showing ? 'Показать фразу бота' : 'Скрыть';
+}
+
+function speak(text, onEnd) {
+  if (!voiceMode) { if (onEnd) onEnd(); return; }
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
@@ -319,6 +425,9 @@ function speak(text) {
   const engVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
     || voices.find(v => v.lang.startsWith('en'));
   if (engVoice) utterance.voice = engVoice;
+  utterance.onstart = () => setVoiceOrbState('speaking');
+  utterance.onend = () => { setVoiceOrbState(null); if (onEnd) onEnd(); };
+  utterance.onerror = () => { setVoiceOrbState(null); if (onEnd) onEnd(); };
   window.speechSynthesis.speak(utterance);
 }
 
@@ -352,6 +461,7 @@ function startRecording() {
     document.getElementById('mic-btn').textContent = '⏹';
     document.getElementById('chat-input').value = '';
     document.getElementById('chat-input').placeholder = 'Говорите...';
+    setVoiceOrbState('listening');
   };
 
   recognition.onresult = (e) => {
@@ -372,6 +482,7 @@ function stopRecording() {
   document.getElementById('mic-btn').classList.remove('recording');
   document.getElementById('mic-btn').textContent = '🎤';
   document.getElementById('chat-input').placeholder = 'Говорите...';
+  setVoiceOrbState(null);
 }
 
 
@@ -387,6 +498,7 @@ function startChat(topicRu, topicEn) {
   document.getElementById('chat-count').textContent = `0 / ${MAX_QUESTIONS}`;
   document.getElementById('chat-messages').innerHTML = '';
   document.getElementById('chat-input').value = '';
+  applyVoiceUI();
 
   const systemPrompt = `You are a friendly English conversation partner helping a Russian-speaking student practice English at A2 level. Topic: "${topicEn}".
 
@@ -546,6 +658,7 @@ function parseResponse(text) {
 async function sendToGroq() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('chat-input').disabled = true;
+  document.getElementById('mic-btn').disabled = true;
   addLoading();
 
   try {
@@ -569,23 +682,36 @@ async function sendToGroq() {
 
     removeLoading();
     const { en, ru, correction, reason } = parseResponse(reply);
-    if (correction) addCorrectionCard(correction, reason);
+    lastBotEn = en;
+    lastBotRu = ru;
+    if (correction && !voiceMode) addCorrectionCard(correction, reason);
     addBotMessage(en, ru);
-    speak(en);
+    if (voiceMode) updateVoiceReveal();
 
-    if (questionCount >= MAX_QUESTIONS) {
-      document.getElementById('chat-input').disabled = true;
-      document.getElementById('send-btn').disabled = true;
+    const finishTurn = () => {
+      if (questionCount >= MAX_QUESTIONS) {
+        document.getElementById('chat-input').disabled = true;
+        document.getElementById('send-btn').disabled = true;
+        document.getElementById('mic-btn').disabled = true;
+      } else {
+        document.getElementById('chat-input').disabled = false;
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('mic-btn').disabled = false;
+        if (!voiceMode) document.getElementById('chat-input').focus();
+      }
+    };
+
+    if (voiceMode) {
+      speak(en, finishTurn);
     } else {
-      document.getElementById('chat-input').disabled = false;
-      document.getElementById('send-btn').disabled = false;
-      document.getElementById('chat-input').focus();
+      finishTurn();
     }
   } catch (e) {
     removeLoading();
     addBotMessage('Ошибка соединения. Попробуй ещё раз.', '');
     document.getElementById('chat-input').disabled = false;
     document.getElementById('send-btn').disabled = false;
+    document.getElementById('mic-btn').disabled = false;
   }
 }
 

@@ -364,6 +364,27 @@ let lastBotEn = '';
 let lastBotRu = '';
 const MAX_QUESTIONS = 20;
 
+// iOS (standalone PWA) blocks speechSynthesis.speak() calls that aren't
+// tied to a direct user gesture. speak() here fires later, after the network
+// reply comes back, so we "unlock" audio once on the very first tap.
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const u = new SpeechSynthesisUtterance(' ');
+  u.volume = 0;
+  window.speechSynthesis.speak(u);
+}
+document.addEventListener('touchend', unlockAudio, { once: true, passive: true });
+document.addEventListener('click', unlockAudio, { once: true });
+
+let cachedVoices = [];
+function loadVoices() { cachedVoices = window.speechSynthesis.getVoices(); }
+loadVoices();
+if ('onvoiceschanged' in window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
 function applyVoiceUI() {
   const input = document.getElementById('chat-input');
   const micBtn = document.getElementById('mic-btn');
@@ -425,7 +446,7 @@ function speak(text, onEnd) {
   utterance.lang = 'en-US';
   utterance.rate = 0.9;
   // Try to find a good English voice
-  const voices = window.speechSynthesis.getVoices();
+  const voices = cachedVoices.length ? cachedVoices : window.speechSynthesis.getVoices();
   const engVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
     || voices.find(v => v.lang.startsWith('en'));
   if (engVoice) utterance.voice = engVoice;
@@ -453,6 +474,24 @@ function startRecording() {
     alert('Распознавание речи не поддерживается в этом браузере. Попробуй Chrome.');
     return;
   }
+  // iOS ignores the mic permission prompt when SpeechRecognition asks for it
+  // directly inside a home-screen PWA (WebKit bug 185448). Asking via
+  // getUserMedia first works around it — once granted, recognition works.
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        stream.getTracks().forEach(t => t.stop());
+        beginRecognition(SpeechRecognition);
+      })
+      .catch(() => {
+        alert('Нет доступа к микрофону. Разреши доступ к микрофону для этого сайта в настройках iOS (Настройки → Safari → Микрофон, либо через "aA" в адресной строке).');
+      });
+  } else {
+    beginRecognition(SpeechRecognition);
+  }
+}
+
+function beginRecognition(SpeechRecognition) {
   recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
   recognition.interimResults = true;

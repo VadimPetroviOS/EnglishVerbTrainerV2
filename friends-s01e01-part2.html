@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#1a4d70" />
 <link rel="apple-touch-icon" href="icon-192.png" />
@@ -215,15 +215,27 @@
   .action-btn:active { transform: scale(0.97); }
 
   /* Fullscreen mode */
-  .player:fullscreen {
+  .player:fullscreen, .player.fake-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     max-width: none;
     justify-content: center;
     background: #000;
   }
 
-  .player:fullscreen .video-wrap {
+  body.fake-fullscreen-lock {
+    overflow: hidden;
+  }
+
+  .player.fake-fullscreen .overlay-panel {
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  }
+
+  .player:fullscreen .video-wrap, .player.fake-fullscreen .video-wrap {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -231,7 +243,7 @@
     max-width: none;
   }
 
-  .player:fullscreen video {
+  .player:fullscreen video, .player.fake-fullscreen video {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -241,7 +253,7 @@
     border-radius: 0;
   }
 
-  .player:fullscreen .counter {
+  .player:fullscreen .counter, .player.fake-fullscreen .counter {
     position: absolute;
     top: 20px;
     left: 20px;
@@ -252,12 +264,12 @@
     z-index: 3;
   }
 
-  .player:fullscreen .fullscreen-btn {
-    top: 20px;
-    right: 20px;
+  .player:fullscreen .fullscreen-btn, .player.fake-fullscreen .fullscreen-btn {
+    top: calc(20px + env(safe-area-inset-top));
+    right: calc(20px + env(safe-area-inset-right));
   }
 
-  .player:fullscreen .overlay-panel {
+  .player:fullscreen .overlay-panel, .player.fake-fullscreen .overlay-panel {
     position: absolute;
     left: 0;
     right: 0;
@@ -270,9 +282,9 @@
     gap: 0.9rem;
   }
 
-  .player:fullscreen .answer-en { color: #fff; }
-  .player:fullscreen .answer-ru { color: #cfe8fb; }
-  .player:fullscreen #loading-msg { color: #cfe8fb; }
+  .player:fullscreen .answer-en, .player.fake-fullscreen .answer-en { color: #fff; }
+  .player:fullscreen .answer-ru, .player.fake-fullscreen .answer-ru { color: #cfe8fb; }
+  .player:fullscreen #loading-msg, .player.fake-fullscreen #loading-msg { color: #cfe8fb; }
 </style>
 </head>
 <body>
@@ -819,9 +831,20 @@ function startListening() {
   setTimeout(() => { msg.style.display = 'none'; }, 10000);
 }
 
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 function toggleFullscreen() {
   const player = document.getElementById('player');
-  if (!document.fullscreenElement) {
+  // iOS Safari doesn't reliably support the Fullscreen API on non-video
+  // elements (and disables it entirely for installed/PWA home-screen apps),
+  // so fall back to a CSS-only fullscreen overlay there.
+  if (isIOS() || !document.fullscreenEnabled) {
+    player.classList.toggle('fake-fullscreen');
+    document.body.classList.toggle('fake-fullscreen-lock');
+  } else if (!document.fullscreenElement) {
     player.requestFullscreen();
   } else {
     document.exitFullscreen();

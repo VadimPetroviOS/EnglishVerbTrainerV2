@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1a4d70" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Словарный запас</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1.25rem 3rem;
+    color: var(--blue-dark);
+  }
+
+  .header-row {
+    display: flex; align-items: center;
+    justify-content: center; gap: 8px;
+    margin-bottom: 0.5rem;
+  }
+  .back-btn {
+    background: none; border: none;
+    font-size: 20px; color: var(--blue-label);
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .back-btn:hover { color: var(--blue-dark); }
+  h1 { font-size: 20px; font-weight: 600; color: var(--blue-dark); }
+  .subtitle {
+    font-size: 13px;
+    color: var(--blue-label);
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .manhwa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 18px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .manhwa-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+  }
+
+  .manhwa-cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    border: 1.5px solid var(--blue-border);
+    background: var(--blue-light);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .manhwa-card:hover .manhwa-cover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 77, 112, 0.18);
+  }
+  .manhwa-card:active .manhwa-cover { transform: scale(0.97); }
+
+  .manhwa-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .manhwa-title {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--blue-dark);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="header-row">
+  <button class="back-btn" onclick="location.href='index.html'">←</button>
+  <h1>Словарный запас</h1>
+</div>
+<div class="subtitle">Учи слова через манхву</div>
+
+<div class="manhwa-grid">
+  <button class="manhwa-card" onclick="location.href='theWorldsBestEngineer-ch1.html'">
+    <div class="manhwa-cover">
+      <img src="cover_d660431e20904a5e.webp" alt="Система всемогущего дизайнера" />
+    </div>
+    <div class="manhwa-title">Система всемогущего дизайнера</div>
+  </button>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>

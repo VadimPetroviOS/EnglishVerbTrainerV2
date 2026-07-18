@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Манхва — чтение с переводом</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-light: #daeeff;
+    --blue-hover: #c4e4f8;
+    --blue-dark: #1a4d70;
+    --blue-label: #3a7aaa;
+    --blue-border: #7bbfe8;
+    --bg: #f0f8ff;
+    --radius-card: 20px;
+    --radius-btn: 50px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1.75rem 6.5rem;
+    color: var(--blue-dark);
+  }
+
+  header { text-align: center; margin-bottom: 1.25rem; }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--blue-dark);
+    letter-spacing: -0.01em;
+  }
+
+  .page-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+  }
+  .page-wrap + .page-wrap {
+    margin-top: 0;
+  }
+
+  .toggle-all-btn {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    width: calc(100% - 2.4rem);
+    max-width: 480px;
+    border-radius: var(--radius-btn);
+    padding: 16px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+    box-shadow: 0 4px 18px rgba(26,77,112,0.3);
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-dark);
+    z-index: 30;
+  }
+  .toggle-all-btn:hover { background: var(--blue-hover); }
+  .toggle-all-btn:active { transform: translateX(-50%) scale(0.98); }
+  .toggle-all-btn.active {
+    background: var(--blue-dark);
+    color: #fff;
+    border-color: var(--blue-dark);
+  }
+  .next-btn {
+    display: block;
+    width: 100%;
+    margin-top: 1.25rem;
+    border-radius: var(--radius-btn);
+    padding: 16px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+    box-shadow: 0 4px 18px rgba(26,77,112,0.3);
+    background: var(--blue-dark);
+    border: 1.5px solid var(--blue-dark);
+    color: #fff;
+  }
+  .next-btn:hover { background: #123a56; }
+  .next-btn:active { transform: scale(0.98); }
+  .page-frame {
+    border: 1.5px solid var(--blue-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(26,77,112,0.1);
+  }
+  .page-wrap:first-of-type .page-frame {
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    border-bottom: none;
+  }
+  .page-wrap:last-of-type .page-frame {
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
+  }
+  .page-wrap:not(:first-of-type):not(:last-of-type) .page-frame {
+    border-radius: 0;
+    border-top: none;
+    border-bottom: none;
+  }
+  .page-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .pin {
+    position: absolute;
+    left: -15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue-label);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(26,77,112,0.3);
+    transform: translateY(-50%);
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+    z-index: 5;
+    touch-action: none;
+    cursor: grab;
+  }
+  .pin:hover { transform: translateY(-50%) scale(1.08); }
+  .pin.open {
+    background: var(--blue-dark);
+    color: #fff;
+    border-color: var(--blue-dark);
+  }
+  .pin.dragging {
+    cursor: grabbing;
+    box-shadow: 0 0 0 4px rgba(26,77,112,0.2), 0 2px 8px rgba(26,77,112,0.3);
+    transition: none;
+  }
+
+  .trans-popup {
+    position: absolute;
+    left: 24px;
+    max-width: 76%;
+    background: rgba(255,255,255,0.97);
+    border: 1.5px solid var(--blue-border);
+    border-radius: 14px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--blue-label);
+    box-shadow: 0 4px 16px rgba(26,77,112,0.22);
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 6;
+  }
+  .trans-popup.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (max-width: 420px) {
+    body { padding-left: 1.1rem; padding-right: 1.1rem; }
+    .pin { width: 26px; height: 26px; left: -13px; font-size: 12px; }
+    .trans-popup { font-size: 12px; max-width: 80%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The Greatest Estate Developer</h1>
+</header>
+
+<div class="page-wrap" id="page-wrap">
+  <div class="page-frame">
+    <img src="https://res.cloudinary.com/ufbidw3j/image/upload/v1784384864/3_kdjy4b.jpg" alt="Страница манхвы 1" />
+  </div>
+</div>
+
+<div class="page-wrap" id="page-wrap-2">
+  <div class="page-frame">
+    <img src="https://res.cloudinary.com/ufbidw3j/image/upload/v1784384861/4_xlljj6.jpg" alt="Страница манхвы 2" />
+  </div>
+</div>
+
+<div class="page-wrap" id="page-wrap-3">
+  <div class="page-frame">
+    <img src="https://res.cloudinary.com/ufbidw3j/image/upload/v1784384861/5_n94qm2.jpg" alt="Страница манхвы 3" />
+  </div>
+  <button class="next-btn" id="next-btn">Следующее →</button>
+</div>
+
+<button class="toggle-all-btn" id="toggle-all-btn" onclick="toggleAll()">Показать перевод</button>
+
+<script>
+const data = [
+  {ru:'Меня зовут «Ким Су-Хо».', y:6.17},
+  {ru:'Давай!', y:9.53},
+  {ru:'Хватай!', y:9.64},
+  {ru:'Вот это!', y:10.44},
+  {ru:'Готово!', y:10.56},
+  {ru:'Нет, здесь я — «Ллойд Фронтера»!', y:11.38},
+  {ru:'Если сказать просто!', y:12.4},
+  {ru:'Я обычный, ничем не примечательный инженер-строитель,', y:23.36},
+  {ru:'с историей, которая полностью изменит мир!', y:27.11},
+  {ru:'Хабиэль.', y:29.63},
+  {ru:'Да, господин Ллойд.', y:30.73},
+  {ru:'Это всё станет деньгами!!', y:33.32},
+  {ru:'УВАХАХАХАХА', y:34.58},
+  {ru:'Ты наконец сошёл с ума?', y:35.95},
+  {ru:'Несколько лет назад...', y:40.86},
+  {ru:'УВЕДОМЛЕНИЕ', y:41.84},
+  {ru:'Ваше желание было случайно выбрано и исполнено «Верховным существом»!', y:42.37},
+  {ru:'Поздравляем ^^ *Хлоп-хлоп-хлоп*', y:43.58},
+  {ru:'......', y:44.23},
+  {ru:'Вы примете облик вымышленного персонажа из «Инженера со стальной кровью».', y:46.03},
+  {ru:'«Инженер со стальной кровью»...? Роман, который я читал вчера вечером...?', y:46.82},
+  {ru:'Старайся! Удачи~! Ура~!', y:48.57},
+  {ru:'Какое желание? Стараться в чём?', y:49.78},
+  {ru:'Я даже не пил... Как это может быть настолько реальным...?', y:50.39},
+  {ru:'Ах! Неужели?! Это как в тех вебтунах про перерождение, что выходят так часто?!', y:51.24},
+  {ru:'Я правда попал в другой мир?!', y:52.7},
+  {ru:'Но тогда...', y:53.48},
+  {ru:'почему я очнулся, лёжа лицом вниз на грунтовой дороге?!', y:54.68},
+  {ru:'Угх... Холодно...', y:56.44},
+  {ru:'Урк?! Что не так с моим ртом?!', y:58.05},
+  {ru:'АНОМАЛИЯ СОСТОЯНИЯ!', y:59.9},
+  {ru:'Ваши губы онемели из-за сна на улице!', y:60.21},
+  {ru:'Я уже это знаю! Тон этих сообщений жутко раздражает!', y:61.78},
+  {ru:'Ну, я знаю, что переродился, но...', y:64.02},
+  {ru:'Это сон или реальность...', y:65.44},
+  {ru:'Кто я теперь...? В «Инженере со стальной кровью» разве не было того, кто пришёл из деревни, упал на дороге и...', y:65.84},
+  {ru:'Господин Ллойд.', y:66.44},
+  {ru:'Вы здесь. Я вас искал.', y:68.29},
+  {ru:'Пойдёмте обратно в особняк.', y:73.13},
+  {ru:'Главный герой «Инженера со стальной кровью»', y:75.45},
+  {ru:'Хабиэль Аскрахан', y:75.55},
+  {ru:'Он полностью идентичен иллюстрации из романа....', y:76.31},
+  {ru:'И он что, только что назвал меня Ллойдом?', y:77.81},
+  {ru:'По ходу истории он становится известен по всему континенту как мечник Хабиэль!', y:78.67},
+  {ru:'Но начинает он в городе Аркос Фронтера обычным рыцарем.', y:81.16},
+  {ru:'А баронета из Фронтеры звали...', y:82.63},
+  {ru:'Я должен быть этим олухом Ллойдом Фронтерой?!', y:83.71},
+  {ru:'...... ......', y:86.12},
+  {ru:'Я назвал тебя по имени, но никогда не говорил, что ты олух.', y:88.16},
+  {ru:'Что ж, я рад, что ты это осознаёшь.', y:89.81},
+  {ru:'Ха...', y:90.56},
+  {ru:'Похоже, Хабиэль в хорошем настроении. Лол.', y:91.19},
+  {ru:'Я знаю, я и сам вижу! Да заткнись ты уже!', y:91.54},
+  {ru:'Ты не помнишь, почему ты там был?', y:95.92},
+  {ru:'Ты пил днём и разгромил мебель в таверне. Ты вполне можешь стать завтрашней главной новостью.', y:96.64},
+  {ru:'Ты рухнул по дороге домой из-за инстинкта возвращения домой.', y:97.02},
+  {ru:'Как и следовало ожидать от жизни придурка.', y:98.16},
+  {ru:'Прим. переводчика: инстинкт возвращения домой — врождённая способность животного возвращаться на свою территорию, отдалившись от неё.', y:98.49},
+  {ru:'Лорд отправил меня, потому что волновался.', y:99.22},
+  {ru:'Он не хотел бы оплакивать вывихнутый рот идиота-сына, погибшего вдали от дома.', y:99.63}
+];
+
+const data2 = [
+  {ru:'Это довольно грубо звучит.', y:0.84},
+  {ru:'Угх... холодно... даже пол...', y:1.51},
+  {ru:'Не может быть. Это же средневековое фэнтези.', y:1.81},
+  {ru:'Холодно~', y:2.29},
+  {ru:'Отдохни пока. Я доложу лорду о том, что случилось в таверне, завтра утром.', y:3.22},
+  {ru:'Тебе обязательно это делать?', y:3.63},
+  {ru:'Да.', y:4.42},
+  {ru:'Он такой упрямый...', y:4.65},
+  {ru:'Эм... Хабиэль.', y:5.41},
+  {ru:'Да, сэр Ллойд.', y:6.57},
+  {ru:'Мой дом... тонет в долгах, да?', y:7.42},
+  {ru:'Это что-то новенькое от тебя...', y:9.3},
+  {ru:'Хлоп!', y:10.74},
+  {ru:'......', y:12.3},
+  {ru:'Я знаю всё об этом романе.', y:13.45},
+  {ru:'В моей тесной комнате в общежитии прошлой ночью', y:14.57},
+  {ru:'я читал последнюю главу этого романа.', y:14.73},
+  {ru:'Так что, конечно, я знал судьбу Ллойда.', y:15.83},
+  {ru:'Прямо с самого начала! Барона и его жену обманывает злодей-мошенник, лишая их всего имущества и поместья, и они кончают жизнь самоубийством!', y:17.16},
+  {ru:'Ллойд стал бродягой и пил, пока не напился до беспамятства...!', y:19.4},
+  {ru:'Алкоголь! Дайте мне алкоголь!', y:20.21},
+  {ru:'А потом его вырвало кровью, и он умер!', y:21.31},
+  {ru:'Гхых!', y:21.61},
+  {ru:'Чёрт! Какой смысл быть бароном?!', y:23.66},
+  {ru:'Это так же паршиво, как быть в Корее!!', y:25.76},
+  {ru:'Что ещё за «Высшее Существо»?!', y:26.56},
+  {ru:'[УВЕДОМЛЕНИЕ] Твоё желание было случайно выбрано и исполнено «Высшим Существом»!', y:27.17},
+  {ru:'И почему моё желание — переродиться именно с такой судьбой?!', y:27.62},
+  {ru:'Ты сломал мебель в таверне прошлой ночью...?', y:33.08},
+  {ru:'[Мать Ллойда — Марбелла Фронтера]', y:35.01},
+  {ru:'Ах, неужели? Не могу же я сказать, что читал роман, верно?', y:35.61},
+  {ru:'Умоляю тебя, Ллойд. Пожалуйста, обязательно иди и извинись в этот раз...', y:37.21},
+  {ru:'Чёрт... это тело всё же натворило дел, так что, полагаю, придётся это исправлять...', y:38.77},
+  {ru:'Ёрзание...', y:39.03},
+  {ru:'Ладно... хорошо... я...', y:39.33},
+  {ru:'[Двое людей весьма удивлены твоей реакцией.]', y:41.32},
+  {ru:'Разве они не должны этим гордиться?!', y:41.69},
+  {ru:'Хаа...', y:43.85},
+  {ru:'!', y:44.69},
+  {ru:'Ху?!', y:47.18},
+  {ru:'Шорох', y:49.36},
+  {ru:'?', y:50.01},
+  {ru:'......', y:51.07},
+  {ru:'......', y:54.35},
+  {ru:'Не смотри ему в глаза!', y:57.67},
+  {ru:'Бам!', y:59.11},
+  {ru:'[Жители этого города «испытывают отвращение» к тебе.]', y:60.91},
+  {ru:'Да, я знаю.', y:61.04},
+  {ru:'Кстати, почему ты идёшь за мной?', y:61.79},
+  {ru:'Лорд приказал мне сопровождать тебя, чтобы предотвратить повторение вчерашнего происшествия.', y:63.06},
+  {ru:'Ты — мой эскорт?', y:63.54},
+  {ru:'Не совсем. Я сопровождаю жителей города. От тебя, Ллойд.', y:64.75},
+  {ru:'Ага. Значит, я просто «толпа».', y:64.88},
+  {ru:'Похоже, для начала придётся стереть с себя репутацию мерзавца...', y:65.68},
+  {ru:'Бродяги всё равно в итоге получают лишь горсть риса.', y:65.98},
+  {ru:'Нет, если я просто улажу долг дома до этого...!', y:67.59},
+  {ru:'Ведь я — наследник правителя страны,', y:68.48},
+  {ru:'у меня есть шанс жить богатой жизнью вплоть до глубокой старости...!', y:70.04},
+  {ru:'Может, есть какие-нибудь читы, которые я могу использовать...?', y:70.86},
+  {ru:'Дзынь', y:71.02},
+  {ru:'О? Похоже, есть!', y:71.85},
+  {ru:'[Навыки Ллойда]', y:72.48},
+  {ru:'Мерзавец — пассивный навык. Ты заставляешь других людей смотреть на тебя с презрением.', y:72.95},
+  {ru:'Проблемный пьяница — использование этого навыка позволит тебе превратиться в собаку.', y:73.4},
+  {ru:'???', y:74.19},
+  {ru:'Хлоп! Хлоп!', y:74.3},
+  {ru:'Сэр Ллойд. Куда вы идёте?', y:75.65},
+  {ru:'Ху?! Что?', y:76.53},
+  {ru:'Мы пришли к таверне.', y:77.37},
+  {ru:'Надо же, вы солгали, когда сказали, что извинитесь?', y:77.57},
+  {ru:'А?! Нет! Конечно нет! Я просто думал о другом!', y:78.62},
+  {ru:'......', y:79},
+  {ru:'Хм? Что? Почему?', y:80.7},
+  {ru:'Что? Что такое?', y:81.42},
+  {ru:'Ничего.', y:82.07},
+  {ru:'Пойдём внутрь.', y:82.98},
+  {ru:'Пардон муа~', y:83.64},
+  {ru:'......', y:84.52},
+  {ru:'Что-то изменилось со вчерашней ночи...', y:85.57},
+  {ru:'Как будто...', y:86.95},
+  {ru:'он стал совсем другим человеком...', y:87.18},
+  {ru:'Мне очень жаль! Мои вчерашние действия были крайне неуместны!', y:91.27},
+  {ru:'......', y:93.21},
+  {ru:'[Хозяин таверны крайне осторожен.]', y:94.63},
+  {ru:'С-с-сэр... умоляю, не делайте этого.', y:95.31},
+  {ru:'Ах, вот оно как? Он ещё больше испугался, когда я заговорил формально.', y:96.44},
+  {ru:'Тогда мне стоит быть немного грубее.', y:96.96},
+  {ru:'Я же извинился, ясно?', y:97.08},
+  {ru:'Ты совсем не умеешь выглядеть виноватым.', y:98.2},
+  {ru:'Аргх, да ладно тебе!!', y:98.32},
+  {ru:'Я... всё в порядке...', y:99.2},
+  {ru:'Вам не нужно извиняться...', y:99.33}
+];
+
+const data3 = [
+  {ru:'......', y:1.33},
+  {ru:'Хоть я и извинился, хозяину это не особо понравилось...', y:6.69},
+  {ru:'Это вполне естественно.', y:8.01},
+  {ru:'Вчера ты разбил всю мебель и украшения внутри таверны.', y:9.25},
+  {ru:'Всё это было куплено потом, кровью и деньгами хозяина.', y:9.62},
+  {ru:'Если ему не возместят ущерб, он никак не успокоится.', y:11.52},
+  {ru:'Мне и так нужно выплачивать долг за дом...', y:12.26},
+  {ru:'И я так и не сблизился ни с кем из местных жителей...', y:13.84},
+  {ru:'Не расплатившись с долгом, я мало что могу сделать.', y:14.69},
+  {ru:'Но что мне делать?!', y:15.28},
+  {ru:'Дело не только в этом.', y:16.9},
+  {ru:'Мать хозяина всё ещё страдает от простуды с прошлой зимы.', y:17.1},
+  {ru:'А с учётом твоей вспышки насилия, ты даже не представляешь, как ему сейчас тяжело.', y:18.93},
+  {ru:'В таверне и без того было довольно уныло. Одним камином всё помещение не обогреть.', y:20.29},
+  {ru:'Старушке будет тяжело бороться с холодом.', y:22.63},
+  {ru:'Тёплые камни ещё не открыли как систему отопления...', y:24.49},
+  {ru:'Прим. переводчика: корейские тёплые камни использовались как система подпольного отопления.', y:24.9},
+  {ru:'Придумал.', y:35.93},
+  {ru:'Кое-что...!', y:38.26},
+  {ru:'Кажется, у меня действительно есть идея...!', y:40.36},
+  {ru:'Да! Наконец-то прорыв!', y:44.38},
+  {ru:'Здесь нет никакой системы отопления!', y:56.26},
+  {ru:'Если я просто построю это в этом мире...', y:59.67},
+  {ru:'Это точно будет продаваться!', y:61.85},
+  {ru:'Они даже не подумают, что это придумал этот ублюдок Ллойд Фронтера!', y:63.74},
+  {ru:'Но это правда сработает! Потому что это возможно для «Ким Су-Хо»!', y:66.97},
+  {ru:'Я учился на инженера-строителя и проектировщика!', y:71.64},
+  {ru:'Когда я служил в армии инженером, я даже построил дом всего за несколько дней!', y:73.61},
+  {ru:'И я работал строителем, трудясь день за днём и ночь за ночью!', y:75.49},
+  {ru:'Вот оно! Я начну с этого и полностью выплачу все долги этого барона!', y:78.86},
+  {ru:'Хабиэль! Пойдём в таверну!', y:82.68},
+  {ru:'Почему так внезапно...', y:83.73},
+  {ru:'Я собираюсь получить свой первый заказ!', y:87.19},
+  {ru:'[УВЕДОМЛЕНИЕ] Твоё настоящее путешествие только начинается!', y:91.36},
+  {ru:'Система ОО активирована. (ОО = Очки Отношений)', y:93.11},
+  {ru:'Ты можешь получать ОО, улучшая отношения с ключевыми персонажами.', y:94},
+  {ru:'Твои ОО: 0', y:95.15},
+  {ru:'Продолжение следует...', y:99.05}
+];
+
+function renderPage(wrapId, pageData, storageKey) {
+  (function restoreFromStorage() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+      if (Array.isArray(saved) && saved.length === pageData.length) {
+        saved.forEach((y, i) => { if (typeof y === 'number') pageData[i].y = y; });
+      }
+    } catch (e) {}
+  })();
+
+  function persist() {
+    localStorage.setItem(storageKey, JSON.stringify(pageData.map(item => item.y)));
+  }
+
+  const wrap = document.getElementById(wrapId);
+
+  function makeDraggable(pin, popup, item) {
+    let dragging = false, startY = 0, moved = false;
+
+    pin.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      moved = false;
+      startY = e.clientY;
+      pin.classList.add('dragging');
+      pin.setPointerCapture(e.pointerId);
+    });
+
+    pin.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      if (Math.abs(e.clientY - startY) > 4) moved = true;
+      if (!moved) return;
+      const rect = wrap.getBoundingClientRect();
+      let pct = ((e.clientY - rect.top) / rect.height) * 100;
+      pct = Math.max(0.2, Math.min(99.8, pct));
+      pct = Math.round(pct * 100) / 100;
+      item.y = pct;
+      pin.style.top = pct + '%';
+      popup.style.top = pct + '%';
+    });
+
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      pin.classList.remove('dragging');
+      if (moved) {
+        pin._justDragged = true;
+        persist();
+      }
+    }
+    pin.addEventListener('pointerup', endDrag);
+    pin.addEventListener('pointercancel', endDrag);
+  }
+
+  pageData.forEach((item) => {
+    const pin = document.createElement('button');
+    pin.className = 'pin';
+    pin.style.top = item.y + '%';
+    pin.setAttribute('aria-label', 'Показать перевод');
+    pin.textContent = '🌐';
+
+    const popup = document.createElement('div');
+    popup.className = 'trans-popup';
+    popup.style.top = item.y + '%';
+    popup.textContent = item.ru;
+
+    makeDraggable(pin, popup, item);
+
+    pin.addEventListener('click', () => {
+      if (pin._justDragged) { pin._justDragged = false; return; }
+      const open = popup.classList.toggle('visible');
+      pin.classList.toggle('open', open);
+    });
+
+    wrap.appendChild(pin);
+    wrap.appendChild(popup);
+  });
+}
+
+renderPage('page-wrap', data, 'manhwa_coords_v1');
+renderPage('page-wrap-2', data2, 'manhwa_coords_v2');
+renderPage('page-wrap-3', data3, 'manhwa_coords_v3');
+
+let allShown = false;
+
+function toggleAll() {
+  allShown = !allShown;
+  document.querySelectorAll('.trans-popup').forEach(el => el.classList.toggle('visible', allShown));
+  document.querySelectorAll('.pin').forEach(el => el.classList.toggle('open', allShown));
+  const btn = document.getElementById('toggle-all-btn');
+  btn.textContent = allShown ? 'Скрыть перевод' : 'Показать перевод';
+  btn.classList.toggle('active', allShown);
+}
+</script>
+</body>
+</html>

@@ -80,6 +80,29 @@
   }
   .info-btn:hover { background: var(--blue-hover); }
 
+  .hard-toggle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue-label);
+    background: var(--blue-light);
+    border: 1.5px solid var(--blue-border);
+    border-radius: var(--radius-btn);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .hard-toggle:hover { background: var(--blue-hover); }
+  .hard-toggle.active {
+    background: var(--blue-dark);
+    border-color: var(--blue-dark);
+    color: #fff;
+  }
+  .hard-toggle.locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
   .stats-row {
     display: flex;
     align-items: center;
@@ -257,6 +280,7 @@
   <div class="header-row">
     <button class="back-btn" onclick="location.href='index.html'">←</button>
     <h1>English Verb Trainer</h1>
+    <button class="hard-toggle" id="hard-toggle" onclick="toggleHardMode()">Hard Mode</button>
     <button class="info-btn" onclick="openModal()">i</button>
   </div>
   <div class="stats-row">
@@ -334,6 +358,227 @@ const verbs = [
   {en:'decide',ru:'решать'},{en:'explain',ru:'объяснять'},{en:'remember',ru:'помнить'},
   {en:'try',ru:'пробовать'},{en:'move',ru:'двигаться'},{en:'stop',ru:'останавливаться'}
 ];
+
+/* ==== Hard Mode: доп. глаголы (A1/A2/B1) ==== */
+/* Неправильные — с готовыми формами Past Simple (ps) и Past Participle (pp) */
+const extraIrregularVerbs = [
+  {en:'have',ps:'had',pp:'had',ru:'иметь'},
+  {en:'do',ps:'did',pp:'done',ru:'делать'},
+  {en:'go',ps:'went',pp:'gone',ru:'идти, ехать'},
+  {en:'get',ps:'got',pp:'got',ru:'получать'},
+  {en:'make',ps:'made',pp:'made',ru:'делать, создавать'},
+  {en:'know',ps:'knew',pp:'known',ru:'знать'},
+  {en:'think',ps:'thought',pp:'thought',ru:'думать'},
+  {en:'see',ps:'saw',pp:'seen',ru:'видеть'},
+  {en:'come',ps:'came',pp:'come',ru:'приходить'},
+  {en:'take',ps:'took',pp:'taken',ru:'брать'},
+  {en:'eat',ps:'ate',pp:'eaten',ru:'есть (кушать)'},
+  {en:'give',ps:'gave',pp:'given',ru:'давать'},
+  {en:'find',ps:'found',pp:'found',ru:'находить'},
+  {en:'tell',ps:'told',pp:'told',ru:'рассказывать'},
+  {en:'say',ps:'said',pp:'said',ru:'говорить, сказать'},
+  {en:'speak',ps:'spoke',pp:'spoken',ru:'говорить'},
+  {en:'write',ps:'wrote',pp:'written',ru:'писать'},
+  {en:'read',ps:'read',pp:'read',ru:'читать'},
+  {en:'run',ps:'ran',pp:'run',ru:'бежать'},
+  {en:'sit',ps:'sat',pp:'sat',ru:'сидеть'},
+  {en:'stand',ps:'stood',pp:'stood',ru:'стоять'},
+  {en:'sleep',ps:'slept',pp:'slept',ru:'спать'},
+  {en:'feel',ps:'felt',pp:'felt',ru:'чувствовать'},
+  {en:'buy',ps:'bought',pp:'bought',ru:'покупать'},
+  {en:'bring',ps:'brought',pp:'brought',ru:'приносить'},
+  {en:'put',ps:'put',pp:'put',ru:'класть'},
+  {en:'drink',ps:'drank',pp:'drunk',ru:'пить'},
+  {en:'swim',ps:'swam',pp:'swum',ru:'плавать'},
+  {en:'fly',ps:'flew',pp:'flown',ru:'летать'},
+  {en:'drive',ps:'drove',pp:'driven',ru:'водить (машину)'},
+  {en:'ride',ps:'rode',pp:'ridden',ru:'ездить верхом/на велосипеде'},
+  {en:'meet',ps:'met',pp:'met',ru:'встречать'},
+  {en:'pay',ps:'paid',pp:'paid',ru:'платить'},
+  {en:'leave',ps:'left',pp:'left',ru:'уходить, оставлять'},
+  {en:'wear',ps:'wore',pp:'worn',ru:'носить (одежду)'},
+  {en:'begin',ps:'began',pp:'begun',ru:'начинать'},
+  {en:'break',ps:'broke',pp:'broken',ru:'ломать'},
+  {en:'cut',ps:'cut',pp:'cut',ru:'резать'},
+  {en:'win',ps:'won',pp:'won',ru:'выигрывать'},
+  {en:'lose',ps:'lost',pp:'lost',ru:'терять, проигрывать'},
+  {en:'hear',ps:'heard',pp:'heard',ru:'слышать'},
+  {en:'understand',ps:'understood',pp:'understood',ru:'понимать'},
+  {en:'teach',ps:'taught',pp:'taught',ru:'учить (кого-то)'},
+  {en:'catch',ps:'caught',pp:'caught',ru:'ловить'},
+  {en:'become',ps:'became',pp:'become',ru:'становиться'},
+  {en:'build',ps:'built',pp:'built',ru:'строить'},
+  {en:'choose',ps:'chose',pp:'chosen',ru:'выбирать'},
+  {en:'draw',ps:'drew',pp:'drawn',ru:'рисовать'},
+  {en:'dream',ps:'dreamt',pp:'dreamt',ru:'мечтать, видеть сон'},
+  {en:'fall',ps:'fell',pp:'fallen',ru:'падать'},
+  {en:'feed',ps:'fed',pp:'fed',ru:'кормить'},
+  {en:'fight',ps:'fought',pp:'fought',ru:'драться, бороться'},
+  {en:'forget',ps:'forgot',pp:'forgotten',ru:'забывать'},
+  {en:'forgive',ps:'forgave',pp:'forgiven',ru:'прощать'},
+  {en:'freeze',ps:'froze',pp:'frozen',ru:'замерзать'},
+  {en:'grow',ps:'grew',pp:'grown',ru:'расти, выращивать'},
+  {en:'hang',ps:'hung',pp:'hung',ru:'вешать'},
+  {en:'hide',ps:'hid',pp:'hidden',ru:'прятать(ся)'},
+  {en:'hit',ps:'hit',pp:'hit',ru:'ударять'},
+  {en:'hold',ps:'held',pp:'held',ru:'держать'},
+  {en:'hurt',ps:'hurt',pp:'hurt',ru:'причинять боль'},
+  {en:'keep',ps:'kept',pp:'kept',ru:'хранить, держать'},
+  {en:'lay',ps:'laid',pp:'laid',ru:'класть, укладывать'},
+  {en:'lead',ps:'led',pp:'led',ru:'вести, руководить'},
+  {en:'lend',ps:'lent',pp:'lent',ru:'одалживать'},
+  {en:'let',ps:'let',pp:'let',ru:'позволять'},
+  {en:'lie',ps:'lay',pp:'lain',ru:'лежать'},
+  {en:'light',ps:'lit',pp:'lit',ru:'зажигать'},
+  {en:'mean',ps:'meant',pp:'meant',ru:'значить, иметь в виду'},
+  {en:'ring',ps:'rang',pp:'rung',ru:'звонить (о звонке)'},
+  {en:'rise',ps:'rose',pp:'risen',ru:'подниматься, вставать'},
+  {en:'sell',ps:'sold',pp:'sold',ru:'продавать'},
+  {en:'send',ps:'sent',pp:'sent',ru:'посылать'},
+  {en:'set',ps:'set',pp:'set',ru:'устанавливать'},
+  {en:'shine',ps:'shone',pp:'shone',ru:'сиять'},
+  {en:'shoot',ps:'shot',pp:'shot',ru:'стрелять'},
+  {en:'show',ps:'showed',pp:'shown',ru:'показывать'},
+  {en:'shut',ps:'shut',pp:'shut',ru:'закрывать'},
+  {en:'sing',ps:'sang',pp:'sung',ru:'петь'},
+  {en:'sink',ps:'sank',pp:'sunk',ru:'тонуть'},
+  {en:'smell',ps:'smelt',pp:'smelt',ru:'пахнуть, нюхать'},
+  {en:'spend',ps:'spent',pp:'spent',ru:'тратить'},
+  {en:'spread',ps:'spread',pp:'spread',ru:'распространять'},
+  {en:'steal',ps:'stole',pp:'stolen',ru:'воровать'},
+  {en:'stick',ps:'stuck',pp:'stuck',ru:'приклеивать(ся)'},
+  {en:'strike',ps:'struck',pp:'struck',ru:'ударять, бастовать'},
+  {en:'swear',ps:'swore',pp:'sworn',ru:'клясться, ругаться'},
+  {en:'sweep',ps:'swept',pp:'swept',ru:'подметать'},
+  {en:'throw',ps:'threw',pp:'thrown',ru:'бросать'},
+  {en:'wake',ps:'woke',pp:'woken',ru:'просыпаться, будить'},
+  {en:'arise',ps:'arose',pp:'arisen',ru:'возникать'},
+  {en:'awake',ps:'awoke',pp:'awoken',ru:'пробуждаться'},
+  {en:'bear',ps:'bore',pp:'borne',ru:'нести, терпеть, рождать'},
+  {en:'bend',ps:'bent',pp:'bent',ru:'сгибать'},
+  {en:'bet',ps:'bet',pp:'bet',ru:'держать пари'},
+  {en:'bind',ps:'bound',pp:'bound',ru:'связывать'},
+  {en:'bite',ps:'bit',pp:'bitten',ru:'кусать'},
+  {en:'bleed',ps:'bled',pp:'bled',ru:'кровоточить'},
+  {en:'blow',ps:'blew',pp:'blown',ru:'дуть'},
+  {en:'burst',ps:'burst',pp:'burst',ru:'лопаться, взрываться'},
+  {en:'cast',ps:'cast',pp:'cast',ru:'бросать, отливать'},
+  {en:'cling',ps:'clung',pp:'clung',ru:'цепляться'},
+  {en:'creep',ps:'crept',pp:'crept',ru:'ползти, красться'},
+  {en:'deal',ps:'dealt',pp:'dealt',ru:'иметь дело, торговать'},
+  {en:'dig',ps:'dug',pp:'dug',ru:'копать'},
+  {en:'fit',ps:'fit',pp:'fit',ru:'подходить (по размеру)'},
+  {en:'flee',ps:'fled',pp:'fled',ru:'бежать, спасаться'},
+  {en:'fling',ps:'flung',pp:'flung',ru:'швырять'},
+  {en:'forbid',ps:'forbade',pp:'forbidden',ru:'запрещать'},
+  {en:'foresee',ps:'foresaw',pp:'foreseen',ru:'предвидеть'},
+  {en:'grind',ps:'ground',pp:'ground',ru:'молоть, шлифовать'},
+  {en:'kneel',ps:'knelt',pp:'knelt',ru:'стоять на коленях'},
+  {en:'knit',ps:'knit',pp:'knit',ru:'вязать'},
+  {en:'leap',ps:'leapt',pp:'leapt',ru:'прыгать'},
+  {en:'overcome',ps:'overcame',pp:'overcome',ru:'преодолевать'},
+  {en:'overtake',ps:'overtook',pp:'overtaken',ru:'обгонять'},
+  {en:'plead',ps:'pled',pp:'pled',ru:'умолять, признавать вину'},
+  {en:'prove',ps:'proved',pp:'proven',ru:'доказывать'},
+  {en:'quit',ps:'quit',pp:'quit',ru:'бросать, увольняться'},
+  {en:'seek',ps:'sought',pp:'sought',ru:'искать'},
+  {en:'shake',ps:'shook',pp:'shaken',ru:'трясти'},
+  {en:'shed',ps:'shed',pp:'shed',ru:'проливать, сбрасывать'},
+  {en:'shrink',ps:'shrank',pp:'shrunk',ru:'сжиматься'},
+  {en:'slide',ps:'slid',pp:'slid',ru:'скользить'},
+  {en:'sow',ps:'sowed',pp:'sown',ru:'сеять'},
+  {en:'spin',ps:'spun',pp:'spun',ru:'вращать(ся)'},
+  {en:'spit',ps:'spat',pp:'spat',ru:'плевать'},
+  {en:'split',ps:'split',pp:'split',ru:'раскалывать'},
+  {en:'spoil',ps:'spoilt',pp:'spoilt',ru:'портить(ся)'},
+  {en:'spring',ps:'sprang',pp:'sprung',ru:'вскакивать'},
+  {en:'stink',ps:'stank',pp:'stunk',ru:'вонять'},
+  {en:'strive',ps:'strove',pp:'striven',ru:'стремиться'},
+  {en:'swell',ps:'swelled',pp:'swollen',ru:'опухать, разбухать'},
+  {en:'swing',ps:'swung',pp:'swung',ru:'качать(ся)'},
+  {en:'tear',ps:'tore',pp:'torn',ru:'рвать'},
+  {en:'tread',ps:'trod',pp:'trodden',ru:'ступать'},
+  {en:'weave',ps:'wove',pp:'woven',ru:'ткать, плести'},
+  {en:'weep',ps:'wept',pp:'wept',ru:'плакать, рыдать'},
+  {en:'wind',ps:'wound',pp:'wound',ru:'наматывать, заводить'},
+  {en:'withdraw',ps:'withdrew',pp:'withdrawn',ru:'снимать (деньги), отзывать'}
+];
+
+/* Правильные — формы образуются по обычным правилам (-ed), как в исходном списке */
+const extraRegularVerbs = [
+  {en:'play',ru:'играть'},{en:'live',ru:'жить'},{en:'clean',ru:'убирать, чистить'},
+  {en:'cook',ru:'готовить'},{en:'wash',ru:'мыть'},{en:'visit',ru:'посещать'},
+  {en:'travel',ru:'путешествовать'},{en:'arrive',ru:'прибывать'},{en:'use',ru:'использовать'},
+  {en:'smile',ru:'улыбаться'},{en:'laugh',ru:'смеяться'},{en:'cry',ru:'плакать'},
+  {en:'dance',ru:'танцевать'},{en:'jump',ru:'прыгать'},{en:'climb',ru:'подниматься, лазить'},
+  {en:'kiss',ru:'целовать'},{en:'carry',ru:'нести'},{en:'stay',ru:'оставаться'},
+  {en:'happen',ru:'случаться'},{en:'agree',ru:'соглашаться'},{en:'allow',ru:'разрешать'},
+  {en:'appear',ru:'появляться'},{en:'arrange',ru:'организовывать'},{en:'believe',ru:'верить'},
+  {en:'belong',ru:'принадлежать'},{en:'borrow',ru:'одалживать (у кого-то)'},{en:'complain',ru:'жаловаться'},
+  {en:'continue',ru:'продолжать'},{en:'deliver',ru:'доставлять'},{en:'discover',ru:'обнаруживать'},
+  {en:'discuss',ru:'обсуждать'},{en:'earn',ru:'зарабатывать'},{en:'fail',ru:'терпеть неудачу'},
+  {en:'fill',ru:'заполнять'},{en:'follow',ru:'следовать'},{en:'guess',ru:'угадывать'},
+  {en:'hope',ru:'надеяться'},{en:'imagine',ru:'воображать'},{en:'improve',ru:'улучшать'},
+  {en:'include',ru:'включать'},{en:'introduce',ru:'представлять (кого-то)'},{en:'invite',ru:'приглашать'},
+  {en:'join',ru:'присоединяться'},{en:'manage',ru:'справляться, управлять'},{en:'mention',ru:'упоминать'},
+  {en:'miss',ru:'скучать, пропускать'},{en:'notice',ru:'замечать'},{en:'offer',ru:'предлагать'},
+  {en:'order',ru:'заказывать'},{en:'organize',ru:'организовывать'},{en:'own',ru:'владеть'},
+  {en:'pack',ru:'упаковывать'},{en:'plan',ru:'планировать'},{en:'prepare',ru:'готовить(ся)'},
+  {en:'promise',ru:'обещать'},{en:'protect',ru:'защищать'},{en:'provide',ru:'предоставлять'},
+  {en:'realize',ru:'осознавать'},{en:'receive',ru:'получать'},{en:'recognize',ru:'узнавать'},
+  {en:'repeat',ru:'повторять'},{en:'reply',ru:'отвечать'},{en:'return',ru:'возвращать(ся)'},
+  {en:'save',ru:'спасать, копить'},{en:'share',ru:'делиться'},{en:'shout',ru:'кричать'},
+  {en:'suggest',ru:'предлагать'},{en:'suppose',ru:'предполагать'},{en:'surprise',ru:'удивлять'},
+  {en:'thank',ru:'благодарить'},{en:'touch',ru:'трогать'},{en:'turn',ru:'поворачивать(ся)'},
+  {en:'wait',ru:'ждать'},{en:'warn',ru:'предупреждать'},{en:'worry',ru:'беспокоиться'},
+  {en:'achieve',ru:'достигать'},{en:'add',ru:'добавлять'},{en:'admit',ru:'признавать(ся)'},
+  {en:'affect',ru:'влиять'},{en:'afford',ru:'позволить себе (материально)'},{en:'aim',ru:'стремиться, нацеливаться'},
+  {en:'apologize',ru:'извиняться'},{en:'apply',ru:'подавать заявку, применять'},{en:'approve',ru:'одобрять'},
+  {en:'argue',ru:'спорить'},{en:'attach',ru:'прикреплять'},{en:'attack',ru:'атаковать'},
+  {en:'attempt',ru:'пытаться'},{en:'attend',ru:'посещать (мероприятие)'},{en:'avoid',ru:'избегать'},
+  {en:'base',ru:'основывать'},{en:'behave',ru:'вести себя'},{en:'blame',ru:'обвинять'},
+  {en:'bother',ru:'беспокоить(ся)'},{en:'calculate',ru:'вычислять'},{en:'care',ru:'заботиться'},
+  {en:'cause',ru:'вызывать, являться причиной'},{en:'challenge',ru:'бросать вызов'},{en:'claim',ru:'утверждать, требовать'},
+  {en:'collect',ru:'собирать'},{en:'combine',ru:'объединять'},{en:'compare',ru:'сравнивать'},
+  {en:'compete',ru:'соревноваться'},{en:'complete',ru:'завершать'},{en:'concentrate',ru:'концентрироваться'},
+  {en:'concern',ru:'касаться, беспокоить'},{en:'confirm',ru:'подтверждать'},{en:'connect',ru:'соединять'},
+  {en:'consider',ru:'рассматривать, считать'},{en:'contain',ru:'содержать'},{en:'convince',ru:'убеждать'},
+  {en:'cope',ru:'справляться'},{en:'count',ru:'считать'},{en:'cover',ru:'покрывать'},
+  {en:'create',ru:'создавать'},{en:'damage',ru:'повреждать'},{en:'demand',ru:'требовать'},
+  {en:'depend',ru:'зависеть'},{en:'describe',ru:'описывать'},{en:'design',ru:'проектировать'},
+  {en:'destroy',ru:'разрушать'},{en:'determine',ru:'определять'},{en:'develop',ru:'развивать'},
+  {en:'disappear',ru:'исчезать'},{en:'disappoint',ru:'разочаровывать'},{en:'doubt',ru:'сомневаться'},
+  {en:'encourage',ru:'поощрять'},{en:'establish',ru:'учреждать, устанавливать'},{en:'exist',ru:'существовать'},
+  {en:'expect',ru:'ожидать'},{en:'experience',ru:'испытывать'},{en:'face',ru:'сталкиваться'},
+  {en:'fix',ru:'чинить, закреплять'},{en:'focus',ru:'фокусироваться'},{en:'force',ru:'заставлять'},
+  {en:'gain',ru:'получать, приобретать'},{en:'handle',ru:'справляться, обращаться с чем-то'},{en:'identify',ru:'определять, опознавать'},
+  {en:'ignore',ru:'игнорировать'},{en:'increase',ru:'увеличивать'},{en:'influence',ru:'влиять'},
+  {en:'inform',ru:'информировать'},{en:'insist',ru:'настаивать'},{en:'install',ru:'устанавливать'},
+  {en:'involve',ru:'вовлекать'},{en:'judge',ru:'судить, оценивать'},{en:'justify',ru:'оправдывать'},
+  {en:'lack',ru:'испытывать недостаток'},{en:'limit',ru:'ограничивать'},{en:'link',ru:'связывать'},
+  {en:'maintain',ru:'поддерживать'},{en:'matter',ru:'иметь значение'},{en:'measure',ru:'измерять'},
+  {en:'mix',ru:'смешивать'},{en:'occur',ru:'происходить'},{en:'operate',ru:'действовать, оперировать'},
+  {en:'perform',ru:'выполнять, исполнять'},{en:'permit',ru:'разрешать'},{en:'point',ru:'указывать'},
+  {en:'possess',ru:'обладать'},{en:'predict',ru:'предсказывать'},{en:'present',ru:'представлять'},
+  {en:'pretend',ru:'притворяться'},{en:'prevent',ru:'предотвращать'},{en:'produce',ru:'производить'},
+  {en:'propose',ru:'предлагать'},{en:'publish',ru:'публиковать'},{en:'pull',ru:'тянуть'},
+  {en:'punish',ru:'наказывать'},{en:'push',ru:'толкать'},{en:'question',ru:'сомневаться, спрашивать'},
+  {en:'react',ru:'реагировать'},{en:'reduce',ru:'сокращать'},{en:'refer',ru:'ссылаться, обращаться'},
+  {en:'refuse',ru:'отказывать(ся)'},{en:'regard',ru:'считать, рассматривать'},{en:'relax',ru:'расслабляться'},
+  {en:'release',ru:'выпускать, освобождать'},{en:'rely',ru:'полагаться'},{en:'remain',ru:'оставаться'},
+  {en:'remove',ru:'удалять'},{en:'replace',ru:'заменять'},{en:'represent',ru:'представлять (кого-то/что-то)'},
+  {en:'require',ru:'требовать'},{en:'respect',ru:'уважать'},{en:'respond',ru:'отвечать, реагировать'},
+  {en:'result',ru:'приводить к результату'},{en:'reveal',ru:'раскрывать'},{en:'satisfy',ru:'удовлетворять'},
+  {en:'search',ru:'искать'},{en:'seem',ru:'казаться'},{en:'separate',ru:'разделять'},
+  {en:'settle',ru:'улаживать, поселяться'},{en:'shift',ru:'сдвигать'},{en:'signal',ru:'сигнализировать'},
+  {en:'solve',ru:'решать (проблему)'},{en:'succeed',ru:'преуспевать'},{en:'supply',ru:'снабжать'},
+  {en:'support',ru:'поддерживать'},{en:'survive',ru:'выживать'},{en:'trust',ru:'доверять'},
+  {en:'type',ru:'печатать'},{en:'vary',ru:'варьироваться'},{en:'view',ru:'рассматривать, смотреть'}
+];
+
+/* Полный список для Hard Mode = исходные глаголы + новые (без дублей) */
+const hardVerbs = verbs.concat(extraIrregularVerbs, extraRegularVerbs)
+  .filter((v, i, arr) => arr.findIndex(x => x.en === v.en) === i);
 const situations = [
   'делалось вообще','делается вообще','будет делаться вообще',
   'делалось в тот момент','делается в этот момент','будет делаться в тот момент',
@@ -348,10 +593,19 @@ let score = 0;
 let timerInterval = null;
 let secondsLeft = 600;
 let timerStarted = false;
+let hardMode = false;
+
+function toggleHardMode() {
+  const btn = document.getElementById('hard-toggle');
+  if (btn.classList.contains('locked')) return;
+  hardMode = !hardMode;
+  btn.classList.toggle('active', hardMode);
+}
 
 function startTimer() {
   if (timerStarted) return;
   timerStarted = true;
+  document.getElementById('hard-toggle').classList.add('locked');
   timerInterval = setInterval(() => {
     secondsLeft--;
     const m = Math.floor(secondsLeft / 60);
@@ -377,6 +631,7 @@ function showResult() {
 
 function restartGame() {
   document.getElementById('result-modal').classList.remove('open');
+  document.getElementById('hard-toggle').classList.remove('locked');
   score = 0; secondsLeft = 600; timerStarted = false;
   current = { pronoun: null, verb: null, sit: null };
   document.getElementById('score-display').textContent = '0';
@@ -393,35 +648,52 @@ function restartGame() {
 function conjugate(pronoun, verb, sit) {
   const p = pronoun.en; const v = verb.en;
   const he = ['He','She','It'].includes(p);
+  /* Глаголы, где перед -ing/-ed удваивается последняя согласная
+     (односложные CVC-глаголы: run->running, а также ударные на последний
+     слог двусложные: prefer->preferred, admit->admitted и т.п.) */
+  const DOUBLE_FINAL = new Set([
+    'stop','prefer','plan','admit','occur','permit','refer',
+    'get','put','swim','run','sit','cut','win','begin','forget',
+    'hit','let','set','shut','bet','dig','fit','forbid','knit',
+    'quit','shed','spin','spit','split'
+  ]);
   function addS(v) {
+    if (v==='have') return 'has';
     if (/[sxo]$/.test(v)||/sh$/.test(v)||/ch$/.test(v)) return v+'es';
     if (/[^aeiou]y$/.test(v)) return v.slice(0,-1)+'ies';
     return v+'s';
   }
   function addED(v) {
+    if (DOUBLE_FINAL.has(v)) return v+v.slice(-1)+'ed';
     if (/e$/.test(v)) return v+'d';
     if (/[^aeiou]y$/.test(v)) return v.slice(0,-1)+'ied';
     return v+'ed';
   }
   function addING(v) {
+    if (v==='lie') return 'lying';
+    if (DOUBLE_FINAL.has(v)) return v+v.slice(-1)+'ing';
     if (/[^e]e$/.test(v)) return v.slice(0,-1)+'ing';
     return v+'ing';
   }
+  /* Для неправильных глаголов (заданы поля ps/pp) берём готовые формы,
+     для правильных — образуем по обычным правилам, как раньше */
+  const pastSimple = verb.ps || addED(v);
+  const pastParticiple = verb.pp || addED(v);
   const be = p==='I'?'am':he?'is':'are';
   const was = (p==='I'||he)?'was':'were';
   const have = he?'has':'have';
   switch(sit) {
-    case 'делалось вообще':             return `${p} ${addED(v)}`;
+    case 'делалось вообще':             return `${p} ${pastSimple}`;
     case 'делается вообще':             return `${p} ${he?addS(v):v}`;
     case 'будет делаться вообще':       return `${p} will ${v}`;
     case 'делалось в тот момент':       return `${p} ${was} ${addING(v)}`;
     case 'делается в этот момент':      return `${p} ${be} ${addING(v)}`;
     case 'будет делаться в тот момент': return `${p} will be ${addING(v)}`;
-    case 'уже было сделано':            return `${p} had ${addED(v)}`;
-    case 'уже есть сделано':            return `${p} ${have} ${addED(v)}`;
-    case 'уже будет сделано':           return `${p} will have ${addED(v)}`;
+    case 'уже было сделано':            return `${p} had ${pastParticiple}`;
+    case 'уже есть сделано':            return `${p} ${have} ${pastParticiple}`;
+    case 'уже будет сделано':           return `${p} will have ${pastParticiple}`;
     case 'делалось бы вообще':          return `${p} would ${v}`;
-    case 'было бы сделано':             return `${p} would have ${addED(v)}`;
+    case 'было бы сделано':             return `${p} would have ${pastParticiple}`;
     default: return '';
   }
 }
@@ -450,14 +722,18 @@ function refresh() {
   }
   startTimer();
   current.pronoun = pick(pronouns);
-  current.verb = pick(verbs);
+  current.verb = pick(hardMode ? hardVerbs : verbs);
   current.sit = pick(situations);
   document.getElementById('next-btn').textContent = 'Следующее';
   const ans = document.getElementById('answer-display');
   ans.classList.remove('visible'); ans.textContent = '';
   animateCard('pronoun', current.pronoun.en, true);
   animateCard('pronoun-ru', current.pronoun.ru);
-  setTimeout(() => { animateCard('verb', current.verb.en, true); animateCard('verb-ru', current.verb.ru); }, 60);
+  if (hardMode) {
+    setTimeout(() => { animateCard('verb', current.verb.ru, true); animateCard('verb-ru', '\u00a0'); }, 60);
+  } else {
+    setTimeout(() => { animateCard('verb', current.verb.en, true); animateCard('verb-ru', current.verb.ru); }, 60);
+  }
   setTimeout(() => { animateCard('tense', current.sit); }, 120);
 }
 
